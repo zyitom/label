@@ -8,7 +8,7 @@
 #include <QtSvg/QSvgRenderer>
 #include "model.hpp"
 #include "configure.hpp"
-
+class LabelDialog;
 #define NULL_IMG cv::Mat(0, 0, CV_8UC1)
 
 enum LabelMode{
@@ -101,6 +101,7 @@ signals:
 
 private:
     void openLabelDialog();
+    LabelDialog* currentLabelDialog = nullptr;
     void loadLabel();
 
     void update_cover(QPointF center);

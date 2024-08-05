@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include "mainwindow.h"
 #include "labeldialog.h"
+
 DrawOnPic::DrawOnPic(QWidget *parent) : QLabel(parent), model() {
     pen_point_focus.setWidth(5);
     pen_point_focus.setColor(Qt::green);
@@ -356,21 +357,33 @@ void DrawOnPic::wheelEvent(QWheelEvent *event) {
 
 void DrawOnPic::openLabelDialog() {
     if (focus_box_index >= 0 && focus_box_index < current_label.size()) {
-        LabelDialog *dialog = new LabelDialog(&current_label[focus_box_index], label_mode);
-        dialog->setModal(true);
-        QObject::connect(dialog, &LabelDialog::removeBoxEvent, this, &DrawOnPic::removeBox);
-        QObject::connect(dialog, &LabelDialog::changeBoxEvent, this, &DrawOnPic::updateBox);
-        dialog->show();
+        if (!currentLabelDialog) {
+            currentLabelDialog = new LabelDialog(&current_label[focus_box_index], label_mode);
+            currentLabelDialog->setAttribute(Qt::WA_DeleteOnClose);
+            QObject::connect(currentLabelDialog, &LabelDialog::removeBoxEvent, this, &DrawOnPic::removeBox);
+            QObject::connect(currentLabelDialog, &LabelDialog::changeBoxEvent, this, &DrawOnPic::updateBox);
+            QObject::connect(currentLabelDialog, &LabelDialog::finished, [this]() {
+                currentLabelDialog = nullptr;
+            });
+            currentLabelDialog->show();
+        } else {
+            currentLabelDialog->activateWindow();
+        }
     }
 }
-
 void DrawOnPic::keyPressEvent(QKeyEvent *event) {
     switch (event->key()) {
-        case Qt::Key_Escape: // ESC取消选中
-            focus_box_index = -1;
-            focus_point_index = -1;
-            banned_point_index = -1;
-            update();
+        case Qt::Key_Escape:
+            if (currentLabelDialog) {
+                currentLabelDialog->close();
+                currentLabelDialog = nullptr;
+            } else {
+                // 原有的 ESC 键处理逻辑
+                focus_box_index = -1;
+                focus_point_index = -1;
+                banned_point_index = -1;
+                update();
+            }
             break;
         case Qt::Key_Delete: // Delete删除选中
             if (focus_box_index >= 0) {
