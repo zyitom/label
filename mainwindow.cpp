@@ -266,12 +266,82 @@ void MainWindow::on_interpolateButton_clicked() {
             break;
     }
 }
-
 void MainWindow::on_upLabelButton_clicked() {
-    int prev_idx = ui->labelListWidget->currentRow() - 1;
-    ui->labelListWidget->setCurrentRow(prev_idx >= 0 ? prev_idx : ui->labelListWidget->count() - 1);
-}
+    int currentRow = ui->labelListWidget->currentRow();
+    int totalLabels = ui->labelListWidget->count();
 
+    if (totalLabels == 0) {
+        qDebug() << "No labels available";
+        return;
+    }
+
+    // 计算新的索引，向上循环
+    int newIdx = (currentRow - 1 + totalLabels) % totalLabels;
+    ui->labelListWidget->setCurrentRow(newIdx);
+
+    if (newIdx >= 0 && newIdx < ui->label->get_current_label().size()) {
+        const box_t& current_box = ui->label->get_current_label()[newIdx];
+
+        // 打印坐标
+        qDebug() << "Current label coordinates:";
+        for (int i = 0; i < 4; ++i) {
+            qDebug() << "Point" << i + 1 << ": ("
+                     << current_box.pts[i].x() << ", "
+                     << current_box.pts[i].y() << ")";
+        }
+
+        // 计算标签的边界和中心点
+        qreal minX = 1.0, minY = 1.0, maxX = 0.0, maxY = 0.0;
+        QPointF center(0.0, 0.0);
+        for (int i = 0; i < 4; ++i) {
+            minX = qMin(minX, current_box.pts[i].x());
+            minY = qMin(minY, current_box.pts[i].y());
+            maxX = qMax(maxX, current_box.pts[i].x());
+            maxY = qMax(maxY, current_box.pts[i].y());
+            center += current_box.pts[i];
+        }
+        center /= 4.0;
+
+        // 计算目标区域的宽高
+        qreal targetWidth = maxX - minX;
+        qreal targetHeight = maxY - minY;
+
+        // 添加边距
+        qreal padding = 0.5; // 50%的边距
+        targetWidth *= (1 + padding);
+        targetHeight *= (1 + padding);
+
+        // 获取当前的变换矩阵
+        QTransform currentTransform = ui->label->img2label;
+
+        // 计算需要的缩放比例
+        QRectF currentRect = currentTransform.mapRect(QRectF(0, 0, ui->label->img->width(), ui->label->img->height()));
+        qreal currentScale = qMin(currentRect.width() / ui->label->img->width(), currentRect.height() / ui->label->img->height());
+
+        qreal desiredScale = qMin(ui->label->width() / (targetWidth * ui->label->img->width()),
+                                  ui->label->height() / (targetHeight * ui->label->img->height()));
+
+        qreal scaleFactor = desiredScale / currentScale;
+
+        // 限制最大缩放比例变化
+        scaleFactor = qBound(0.5, scaleFactor, 2.0);
+
+        // 计算新的变换矩阵
+        QTransform newTransform;
+        newTransform.translate(ui->label->width() / 2, ui->label->height() / 2);
+        newTransform.scale(desiredScale, desiredScale);
+        newTransform.translate(-center.x() * ui->label->img->width(), -center.y() * ui->label->img->height());
+
+        // 应用新的变换
+        ui->label->img2label = newTransform;
+        ui->label->update();
+
+        qDebug() << "Applied scale factor:" << scaleFactor;
+        qDebug() << "Center point:" << center;
+    } else {
+        qDebug() << "Invalid label index";
+    }
+}
 void MainWindow::on_downLabelButton_clicked() {
     int next_idx = ui->labelListWidget->currentRow() + 1;
     ui->labelListWidget->setCurrentRow(next_idx < ui->labelListWidget->count() ? next_idx : 0);

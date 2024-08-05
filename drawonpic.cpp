@@ -14,7 +14,8 @@
 #include <regex>
 #include <opencv2/opencv.hpp>
 #include <stdio.h>
-
+#include "mainwindow.h"
+#include "labeldialog.h"
 DrawOnPic::DrawOnPic(QWidget *parent) : QLabel(parent), model() {
     pen_point_focus.setWidth(5);
     pen_point_focus.setColor(Qt::green);
@@ -290,7 +291,7 @@ void DrawOnPic::mouseDoubleClickEvent(QMouseEvent *event) {
 void DrawOnPic::wheelEvent(QWheelEvent *event) {
     if (!img) return;  // 确保图像已加载
 
-    const double delta = (event->delta() > 0) ? (1.1) : (1 / 1.1);
+    const double delta = (event->delta() > 0) ? 1.1 : 1 / 1.1;
 
     // 获取当前显示的图像中心
     QPointF center = QPointF(this->width() / 2, this->height() / 2);
@@ -303,23 +304,22 @@ void DrawOnPic::wheelEvent(QWheelEvent *event) {
     double scaleY = this->height() / (double)img->height();
     double minScale = qMax(scaleX, scaleY);
 
-    // 检查是否已经是最小尺寸或者是否可以继续缩小
-    if (delta < 1) {
-        if (currentRect.width() <= this->width() && currentRect.height() <= this->height()) {
-            // 已经是最小尺寸，不再缩小
-            return;
-        }
-        if (currentRect.width() * delta < this->width() && currentRect.height() * delta < this->height()) {
-            // 如果缩小后图像会小于显示区域，则直接缩放到刚好填满显示区域
-            QTransform fitTransform;
-            fitTransform.scale(minScale, minScale);
-            fitTransform.translate(-img->width()/2, -img->height()/2);
-            fitTransform.translate(this->width()/(2*minScale), this->height()/(2*minScale));
+    // 计算当前的缩放比例
+    double currentScale = qMin(currentRect.width() / img->width(), currentRect.height() / img->height());
 
-            img2label = fitTransform;
-            update();
-            return;
-        }
+    qDebug() << "Before scaling - Current scale:" << currentScale << "Min scale:" << minScale;
+
+    // 如果正在缩小并且已经接近或达到最小尺寸，直接设置为最小尺寸
+    if (delta < 1 && qAbs(currentScale - minScale) < 0.01) {
+        QTransform fitTransform;
+        fitTransform.scale(minScale, minScale);
+        fitTransform.translate(-img->width()/2, -img->height()/2);
+        fitTransform.translate(this->width()/(2*minScale), this->height()/(2*minScale));
+
+        img2label = fitTransform;
+        qDebug() << "Set to min scale:" << minScale;
+        update();
+        return;
     }
 
     QTransform delta_transform;
@@ -334,9 +334,34 @@ void DrawOnPic::wheelEvent(QWheelEvent *event) {
         delta_transform.translate(center.x() * (1 - delta), center.y() * (1 - delta)).scale(delta, delta);
     }
 
-    img2label = img2label * delta_transform;
+    // 应用变换
+    QTransform newTransform = img2label * delta_transform;
+
+    // 检查新的变换是否会导致图像小于窗口
+    QRectF newRect = newTransform.mapRect(QRectF(0, 0, img->width(), img->height()));
+    if (newRect.width() >= this->width() || newRect.height() >= this->height()) {
+        // 只有在缩放后图像仍然大于或等于窗口时才应用新的变换
+        img2label = newTransform;
+
+        // 计算并打印新的缩放比例
+        QRectF scaledRect = img2label.mapRect(QRectF(0, 0, img->width(), img->height()));
+        double newScale = qMin(scaledRect.width() / img->width(), scaledRect.height() / img->height());
+        qDebug() << "After scaling - New scale:" << newScale;
+    } else {
+        qDebug() << "Scaling prevented - At minimum scale:" << minScale;
+    }
 
     update(); // 确保重绘
+}
+
+void DrawOnPic::openLabelDialog() {
+    if (focus_box_index >= 0 && focus_box_index < current_label.size()) {
+        LabelDialog *dialog = new LabelDialog(&current_label[focus_box_index], label_mode);
+        dialog->setModal(true);
+        QObject::connect(dialog, &LabelDialog::removeBoxEvent, this, &DrawOnPic::removeBox);
+        QObject::connect(dialog, &LabelDialog::changeBoxEvent, this, &DrawOnPic::updateBox);
+        dialog->show();
+    }
 }
 
 void DrawOnPic::keyPressEvent(QKeyEvent *event) {
@@ -356,6 +381,10 @@ void DrawOnPic::keyPressEvent(QKeyEvent *event) {
                 emit labelChanged(current_label);
                 update();
             }
+            break;
+        case Qt::Key_D:
+           qDebug()<<"worisinidema";
+            openLabelDialog();
             break;
 
 #pragma region 复制粘贴
@@ -618,44 +647,83 @@ void DrawOnPic::setCurrentFile(QString file) {
     setNormalMode();
 }
 
+// void DrawOnPic::loadImage() {
+//     // 加载图片时，需要计算两个QTransform的初值
+//     // 一个用于缩放图像显示
+//     // 一个用于将归一化标签坐标变为对应像素坐标
+//     delete img;
+//     img = new QImage();
+//     img->load(current_file);
+//     image_equalizeHist = false;
+//     image_enhanceV = false;
+//     double ratio = std::min((double) QLabel::geometry().width() / img->width(),
+//                             (double) QLabel::geometry().height() / img->height());
+
+//     QPolygonF norm_polygen;
+//     norm_polygen.append({0., 0.});
+//     norm_polygen.append({0., 1.});
+//     norm_polygen.append({1., 1.});
+//     norm_polygen.append({1., 0.});
+
+//     QPolygonF image_polygen;
+//     image_polygen.append({0., 0.});
+//     image_polygen.append({0., (double) img->height()});
+//     image_polygen.append({(double) img->width(), (double) img->height()});
+//     image_polygen.append({(double) img->width(), 0.});
+
+//     double x1 = (geometry().width() - img->width() * ratio) / 2;
+//     double y1 = (geometry().height() - img->height() * ratio) / 2;
+//     QPolygonF label_polygen;
+//     label_polygen.append({x1, y1});
+//     label_polygen.append({x1, y1 + ratio * img->height()});
+//     label_polygen.append({x1 + ratio * img->width(), y1 + ratio * img->height()});
+//     label_polygen.append({x1 + ratio * img->width(), y1});
+
+//     QTransform::quadToQuad(norm_polygen, image_polygen, norm2img);
+//     if (!stayPosition) QTransform::quadToQuad(image_polygen, label_polygen, img2label);
+
+//     update();
+// }
 void DrawOnPic::loadImage() {
-    // 加载图片时，需要计算两个QTransform的初值
-    // 一个用于缩放图像显示
-    // 一个用于将归一化标签坐标变为对应像素坐标
     delete img;
     img = new QImage();
-    img->load(current_file);
-    image_equalizeHist = false;
-    image_enhanceV = false;
-    double ratio = std::min((double) QLabel::geometry().width() / img->width(),
-                            (double) QLabel::geometry().height() / img->height());
+    if (!img->load(current_file)) {
+        qDebug() << "Failed to load image:" << current_file;
+        return;
+    }
 
-    QPolygonF norm_polygen;
-    norm_polygen.append({0., 0.});
-    norm_polygen.append({0., 1.});
-    norm_polygen.append({1., 1.});
-    norm_polygen.append({1., 0.});
+    // 获取 DrawOnPic 控件的当前大小
+    QSize labelSize = this->size();
 
-    QPolygonF image_polygen;
-    image_polygen.append({0., 0.});
-    image_polygen.append({0., (double) img->height()});
-    image_polygen.append({(double) img->width(), (double) img->height()});
-    image_polygen.append({(double) img->width(), 0.});
+    // 计算初始缩放比例，保持纵横比
+    double scaleX = (double)labelSize.width() / img->width();
+    double scaleY = (double)labelSize.height() / img->height();
+    currentScale = qMin(scaleX, scaleY);
 
-    double x1 = (geometry().width() - img->width() * ratio) / 2;
-    double y1 = (geometry().height() - img->height() * ratio) / 2;
-    QPolygonF label_polygen;
-    label_polygen.append({x1, y1});
-    label_polygen.append({x1, y1 + ratio * img->height()});
-    label_polygen.append({x1 + ratio * img->width(), y1 + ratio * img->height()});
-    label_polygen.append({x1 + ratio * img->width(), y1});
+    // 计算缩放后的图片尺寸
+    QSize scaledSize = img->size() * currentScale;
 
-    QTransform::quadToQuad(norm_polygen, image_polygen, norm2img);
-    if (!stayPosition) QTransform::quadToQuad(image_polygen, label_polygen, img2label);
+    // 打印信息
+    // qDebug() << "DrawOnPic size:" << labelSize;
+    // qDebug() << "Original image size:" << img->size();
+    // qDebug() << "Scale factor:" << currentScale;
+    // qDebug() << "Scaled image size:" << scaledSize;
+    // qDebug() << "Window aspect ratio:" << (double)labelSize.width() / labelSize.height();
+    // qDebug() << "Image aspect ratio:" << (double)img->width() / img->height();
+
+    // 更新变换矩阵
+    updateTransform();
+
+    // 更新归一化坐标到图像坐标的变换矩阵
+    QPolygonF norm_polygon({QPointF(0, 0), QPointF(0, 1), QPointF(1, 1), QPointF(1, 0)});
+    QPolygonF image_polygon({QPointF(0, 0),
+                             QPointF(0, img->height()),
+                             QPointF(img->width(), img->height()),
+                             QPointF(img->width(), 0)});
+    QTransform::quadToQuad(norm_polygon, image_polygon, norm2img);
 
     update();
 }
-
 void DrawOnPic::setAddingMode() {
     // 设置当前模式为正在添加一个新目标
     if (img == nullptr) return;
@@ -678,6 +746,22 @@ void DrawOnPic::setFocusBox(int index) {
         focus_box_index = index;
         update();
     }
+}
+void DrawOnPic::resizeEvent(QResizeEvent *event) {
+    QLabel::resizeEvent(event);
+    if (img && !img->isNull()) {
+        loadImage();  // 重新计算缩放和位置
+    }
+}
+
+void DrawOnPic::updateTransform() {
+    QSize labelSize = this->size();
+    QSize scaledSize = img->size() * currentScale;
+
+    img2label.reset();
+    img2label.translate((labelSize.width() - scaledSize.width()) / 2,
+                        (labelSize.height() - scaledSize.height()) / 2);
+    img2label.scale(currentScale, currentScale);
 }
 
 void DrawOnPic::removeBox(QVector<box_t>::iterator box_iter) {

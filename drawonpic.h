@@ -41,6 +41,10 @@ public:
     LabelMode label_mode = Armor;
     Configure configure;
     QTransform img2label;       // 图像坐标到实际显示的坐标
+    void setTransform(const QTransform &transform) {
+        img2label = transform;
+        update();}
+    QImage *img = nullptr;
 protected:
     void mousePressEvent(QMouseEvent *event);
 
@@ -86,6 +90,9 @@ public slots:
 
 signals:
 
+    void openLabelDialogRequested(QVector<box_t>::iterator box_iter);
+
+
     void labelChanged(const QVector<box_t> &);
 
     void delCurrentImage();
@@ -93,15 +100,17 @@ signals:
     void update_list_name_signal(const LabelMode mode);
 
 private:
-
+    void openLabelDialog();
     void loadLabel();
 
     void update_cover(QPointF center);
 
     void drawROI(QPainter &painter);
 
+    void resizeEvent(QResizeEvent *event);
     QPointF *checkPoint();
-
+    double currentScale;
+    void updateTransform();
     int label_to_size(int label, LabelMode mode);
 
 private:
@@ -117,7 +126,7 @@ private:
 
     // double ratio;
     // int dx, dy;
-    QImage *img = nullptr;
+    //QImage *img = nullptr;
 
     cv::Mat showing_modified_img;
 
