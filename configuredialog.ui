@@ -1,164 +1,201 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Configuredialog</class>
- <widget class="QDialog" name="Configuredialog">
+ <class>LabelDialog</class>
+ <widget class="QDialog" name="LabelDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>462</width>
-    <height>172</height>
+    <width>400</width>
+    <height>150</height>
    </rect>
   </property>
-  <property name="windowTitle">
-   <string>设置</string>
+  <property name="minimumSize">
+   <size>
+    <width>400</width>
+    <height>150</height>
+   </size>
   </property>
-  <widget class="QLabel" name="Label1">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>20</y>
-     <width>91</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>12</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>点吸附距离：</string>
-   </property>
-  </widget>
-  <widget class="QSlider" name="PDSlider">
-   <property name="geometry">
-    <rect>
-     <x>150</x>
-     <y>20</y>
-     <width>281</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="minimum">
-    <number>1</number>
-   </property>
-   <property name="maximum">
-    <number>500</number>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Horizontal</enum>
-   </property>
-  </widget>
-  <widget class="QLabel" name="Label2">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>70</y>
-     <width>71</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>12</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>高亮倍数：</string>
-   </property>
-  </widget>
-  <widget class="QSlider" name="VRSlider">
-   <property name="geometry">
-    <rect>
-     <x>150</x>
-     <y>70</y>
-     <width>281</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="minimum">
-    <number>10</number>
-   </property>
-   <property name="maximum">
-    <number>100</number>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Horizontal</enum>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="cancelPushButton">
-   <property name="geometry">
-    <rect>
-     <x>70</x>
-     <y>120</y>
-     <width>101</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>12</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>取消</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="OKPushButton">
-   <property name="geometry">
-    <rect>
-     <x>290</x>
-     <y>120</y>
-     <width>101</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>12</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>确定</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="pointDistanceLabel">
-   <property name="geometry">
-    <rect>
-     <x>110</x>
-     <y>20</y>
-     <width>41</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>12</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>3.0</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="vRateLabel">
-   <property name="geometry">
-    <rect>
-     <x>100</x>
-     <y>70</y>
-     <width>41</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>12</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>4.0</string>
-   </property>
-  </widget>
+  <property name="font">
+   <font>
+    <pointsize>12</pointsize>
+   </font>
+  </property>
+  <property name="windowTitle">
+   <string>标签设置</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLabel" name="color_label">
+       <property name="text">
+        <string>颜色：</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="color_box">
+       <item>
+        <property name="text">
+         <string>蓝色</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>红色</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>熄灭</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>紫色</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QLabel" name="class_label">
+       <property name="text">
+        <string>类别：</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="class_box">
+       <item>
+        <property name="text">
+         <string>哨兵</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>英雄</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>工程</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>3号步兵</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>4号步兵</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>5号步兵</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>前哨站</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>基地小装甲</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>基地大装甲</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>3号平衡</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>4号平衡</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>5号平衡</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QPushButton" name="deleteButton">
+       <property name="text">
+        <string>删除</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="cancelButton">
+       <property name="text">
+        <string>取消</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="saveButton">
+       <property name="text">
+        <string>保存</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
  </widget>
  <resources/>
  <connections/>
