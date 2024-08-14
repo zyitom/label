@@ -160,20 +160,19 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
 
 void MainWindow::onLabelDialogFinished(int result) {
     if (result == QDialog::Accepted) {
-        // 对话框被接受（例如点击了"确定"按钮）
         QTimer::singleShot(0, this, [this]() {
-            // 使用 QTimer 确保在 UI 更新后执行
             if (lastEditedLabelIndex < ui->labelListWidget->count()) {
                 ui->labelListWidget->setCurrentRow(lastEditedLabelIndex);
-                ui->labelListWidget->setFocus(); // 将焦点设置回标签列表
+                ui->labelListWidget->setFocus();
+                ui->label->updateBox(); // 立即更新绘图区域
+                on_label_labelChanged(ui->label->get_current_label()); // 更新右侧标签列表
             }
-            this->activateWindow(); // 重新激活主窗口
-            this->setFocus(); // 将焦点设置回主窗口
+            this->activateWindow();
+            this->setFocus();
         });
     } else {
-        // 对话框被拒绝（例如点击了"取消"按钮）
-        this->activateWindow(); // 重新激活主窗口
-        this->setFocus(); // 将焦点设置回主窗口
+        this->activateWindow();
+        this->setFocus();
     }
 }
 
@@ -248,6 +247,8 @@ void MainWindow::on_modeComboBox_currentIndexChanged(int i){
     ui->label->label_mode = LabelMode(i);
     ui->label->load_svg();
     ui->label->configure.last_mode = i;
+    on_label_labelChanged(ui->label->get_current_label()); // 立即更新右侧标签列表
+    ui->label->update(); // 更新绘图区域
 }
 
 void MainWindow::on_interpolateButton_clicked() {

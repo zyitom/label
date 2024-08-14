@@ -372,7 +372,9 @@ void DrawOnPic::openLabelDialog() {
             delete currentLabelDialog;
         }
         currentLabelDialog = new LabelDialog(&current_label[focus_box_index], label_mode);
-        connect(currentLabelDialog, &LabelDialog::finished, this, [this](int result) {
+        connect(currentLabelDialog, &LabelDialog::removeBoxEvent, this, &DrawOnPic::removeBox);
+        connect(currentLabelDialog, &LabelDialog::changeBoxEvent, this, &DrawOnPic::updateBox);
+        connect(currentLabelDialog, &QDialog::finished, this, [this](int result) {
             if (result == QDialog::Accepted) {
                 emit labelChanged(current_label);
                 update();
@@ -802,11 +804,16 @@ void DrawOnPic::updateTransform() {
 }
 
 void DrawOnPic::removeBox(QVector<box_t>::iterator box_iter) {
-    // 删除一个目标
-    current_label.erase(box_iter);
-    emit labelChanged(current_label);
+    int index = std::distance(current_label.begin(), box_iter);
+    if (index >= 0 && index < current_label.size()) {
+        current_label.erase(box_iter);
+        focus_box_index = -1;
+        focus_point_index = -1;
+        banned_point_index = -1;
+        emit labelChanged(current_label);
+        update();
+    }
 }
-
 void DrawOnPic::smart() {
     // 对当前图片进行一次智能标注。
     if (current_file.isEmpty()) return;

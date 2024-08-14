@@ -38,12 +38,12 @@ void LabelDialog::on_saveButton_pressed() {
     last_tag_id = current_box->tag_id;
     last_color_id = current_box->color_id;
     emit changeBoxEvent();
-    this->hide();
+    this->accept(); // 使用 accept() 而不是 hide()
 }
 
 void LabelDialog::on_deleteButton_pressed(){
     emit removeBoxEvent(current_box);
-    this->hide();
+    this->accept(); // 使用 accept() 而不是 hide()
 }
 
 void update_list_name(const LabelMode mode){
