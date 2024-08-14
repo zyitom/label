@@ -23,6 +23,7 @@ public:
     ~MainWindow();
 
 private slots:
+    void onLabelDialogFinished(int result);
 
     void on_openDirectoryPushButton_clicked();
 
@@ -57,6 +58,8 @@ private slots:
     void on_autoEnhanceVCheckBox_stateChanged(int check);
 
 private:
+    int lastEditedLabelIndex; // 记录最后编辑的标签索引
+
     Ui::MainWindow *ui = nullptr;
 
     LabelDialog *dialog = nullptr;

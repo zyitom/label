@@ -4,7 +4,7 @@
 #include <QFileDialog>
 #include <QCoreApplication>
 #include <QMessageBox>
-
+#include <QTimer>
 class IndexQListWidgetItem : public QListWidgetItem {
 public:
     IndexQListWidgetItem(QString name, int index) : QListWidgetItem(name), index(index) {
@@ -131,14 +131,34 @@ void MainWindow::on_label_labelChanged(const QVector<box_t> &labels) {
 }
 
 void MainWindow::on_labelListWidget_itemDoubleClicked(QListWidgetItem *item) {
-    // 双击打开label设置窗口（修改label类别/删除label）
     int idx = static_cast<IndexQListWidgetItem *>(item)->getIndex();
+    lastEditedLabelIndex = idx; // 记录当前编辑的标签索引
     delete dialog;
     dialog = new LabelDialog(ui->label->get_current_label().begin() + idx, ui->label->label_mode);
     dialog->setModal(true);
     QObject::connect(dialog, &LabelDialog::removeBoxEvent, ui->label, &DrawOnPic::removeBox);
     QObject::connect(dialog, &LabelDialog::changeBoxEvent, ui->label, &DrawOnPic::updateBox);
+    QObject::connect(dialog, &QDialog::finished, this, &MainWindow::onLabelDialogFinished);
     dialog->show();
+}
+
+void MainWindow::onLabelDialogFinished(int result) {
+    if (result == QDialog::Accepted) {
+        // 对话框被接受（例如点击了"确定"按钮）
+        QTimer::singleShot(0, this, [this]() {
+            // 使用 QTimer 确保在 UI 更新后执行
+            if (lastEditedLabelIndex < ui->labelListWidget->count()) {
+                ui->labelListWidget->setCurrentRow(lastEditedLabelIndex);
+                ui->labelListWidget->setFocus(); // 将焦点设置回标签列表
+            }
+            this->activateWindow(); // 重新激活主窗口
+            this->setFocus(); // 将焦点设置回主窗口
+        });
+    } else {
+        // 对话框被拒绝（例如点击了"取消"按钮）
+        this->activateWindow(); // 重新激活主窗口
+        this->setFocus(); // 将焦点设置回主窗口
+    }
 }
 
 void MainWindow::on_labelListWidget_currentItemChanged(QListWidgetItem *current, QListWidgetItem *previous) {

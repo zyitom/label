@@ -25,7 +25,14 @@ LabelDialog::LabelDialog(QVector<box_t>::iterator box_iter, const LabelMode mode
 LabelDialog::~LabelDialog() {
     delete ui;
 }
-
+void LabelDialog::closeEvent(QCloseEvent *event) {
+    QDialog::closeEvent(event);
+    QWidget *parent = parentWidget();
+    if (parent) {
+        parent->activateWindow();
+        parent->setFocus();
+    }
+}
 void LabelDialog::on_saveButton_pressed() {
     current_box->set_class(ui->color_box->currentIndex(), ui->class_box->currentIndex());
     last_tag_id = current_box->tag_id;
