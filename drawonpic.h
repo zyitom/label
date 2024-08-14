@@ -8,6 +8,7 @@
 #include <QtSvg/QSvgRenderer>
 #include "model.hpp"
 #include "configure.hpp"
+#include <QStack>
 class LabelDialog;
 #define NULL_IMG cv::Mat(0, 0, CV_8UC1)
 
@@ -22,6 +23,8 @@ class DrawOnPic : public QLabel {
 Q_OBJECT
 
 public:
+    void openLabelDialog();
+
     explicit DrawOnPic(QWidget *parent = nullptr);
 
     QString model_mode() const { return model.get_mode(); }
@@ -56,10 +59,11 @@ protected:
 
     void wheelEvent(QWheelEvent *event);
 
-    void keyPressEvent(QKeyEvent *event);
+    void keyPressEvent(QKeyEvent *event) override;
 
     void paintEvent(QPaintEvent *event);
 
+    bool event(QEvent *event) override;
 public slots:
 
     void setCurrentFile(QString file);
@@ -100,7 +104,9 @@ signals:
     void update_list_name_signal(const LabelMode mode);
 
 private:
-    void openLabelDialog();
+    QStack<QVector<box_t>> undoStack;
+    void saveStateForUndo();
+
     LabelDialog* currentLabelDialog = nullptr;
     void loadLabel();
 

@@ -79,6 +79,8 @@ MainWindow::MainWindow(QWidget *parent, std::string path, int init_mode) :
         ui->fileListHorizontalSlider->setMinimum(1);
         ui->fileListHorizontalSlider->setMaximum(ui->fileListWidget->count());
         ui->fileListHorizontalSlider->setValue(last_flag ? ui->label->configure.last_pic : file_index);
+        ui->label->setFocusPolicy(Qt::StrongFocus);
+        this->installEventFilter(this);
     }
 }
 
@@ -141,6 +143,20 @@ void MainWindow::on_labelListWidget_itemDoubleClicked(QListWidgetItem *item) {
     QObject::connect(dialog, &QDialog::finished, this, &MainWindow::onLabelDialogFinished);
     dialog->show();
 }
+
+
+bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
+    if (event->type() == QEvent::KeyPress) {
+        QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+        if (keyEvent->key() == Qt::Key_D) {
+            qDebug() << "D key pressed in MainWindow";
+            ui->label->openLabelDialog();
+            return true;
+        }
+    }
+    return QMainWindow::eventFilter(obj, event);
+}
+
 
 void MainWindow::onLabelDialogFinished(int result) {
     if (result == QDialog::Accepted) {

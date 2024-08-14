@@ -65,6 +65,8 @@ private:
     LabelDialog *dialog = nullptr;
 
     Configuredialog *cdialog = nullptr;
+protected:
+    bool eventFilter(QObject *obj, QEvent *event) override;
 };
 
 #endif // MAINWINDOW_H

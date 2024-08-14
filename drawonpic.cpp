@@ -17,6 +17,10 @@
 #include "mainwindow.h"
 #include "labeldialog.h"
 
+void DrawOnPic::saveStateForUndo() {
+    undoStack.push(current_label);
+}
+
 DrawOnPic::DrawOnPic(QWidget *parent) : QLabel(parent), model() {
     pen_point_focus.setWidth(5);
     pen_point_focus.setColor(Qt::green);
@@ -261,22 +265,27 @@ void DrawOnPic::mouseReleaseEvent(QMouseEvent *event) {
     pos = event->pos();
     if (event->button() == Qt::LeftButton) {
         switch (mode) {
-            case NORMAL_MODE:   // 松开左键，停止拖动定位点
+        case NORMAL_MODE:   // 松开左键，停止拖动定位点
+            if (draging) {
+                saveStateForUndo();  // 保存拖动前的状态
                 draging = nullptr;
-                break;
-            case ADDING_MODE:   // 松开左键，添加一个定位点
-                adding.append(norm2img.inverted().map(img2label.inverted().map(pos)));
-                if (adding.size() == 4 + (label_mode == Wind)) {
-                    box_t box;
-                    for (int i = 0; i < 4 + (label_mode == Wind); ++i) box.pts[i] = adding[i];
-                    current_label.append(box);
-                    setNormalMode();
-                    emit labelChanged(current_label);
-                }
-                update();
-                break;
-            default:
-                break;
+                emit labelChanged(current_label);  // 通知标签已更改
+            }
+            break;
+        case ADDING_MODE:   // 松开左键，添加一个定位点
+            adding.append(norm2img.inverted().map(img2label.inverted().map(pos)));
+            if (adding.size() == 4 + (label_mode == Wind)) {
+                saveStateForUndo();  // 保存添加新标注前的状态
+                box_t box;
+                for (int i = 0; i < 4 + (label_mode == Wind); ++i) box.pts[i] = adding[i];
+                current_label.append(box);
+                setNormalMode();
+                emit labelChanged(current_label);
+            }
+            update();
+            break;
+        default:
+            break;
         }
     }
 }
@@ -356,21 +365,35 @@ void DrawOnPic::wheelEvent(QWheelEvent *event) {
 }
 
 void DrawOnPic::openLabelDialog() {
+    qDebug() << "Opening label dialog";
     if (focus_box_index >= 0 && focus_box_index < current_label.size()) {
-        if (!currentLabelDialog) {
-            currentLabelDialog = new LabelDialog(&current_label[focus_box_index], label_mode);
-            currentLabelDialog->setAttribute(Qt::WA_DeleteOnClose);
-            QObject::connect(currentLabelDialog, &LabelDialog::removeBoxEvent, this, &DrawOnPic::removeBox);
-            QObject::connect(currentLabelDialog, &LabelDialog::changeBoxEvent, this, &DrawOnPic::updateBox);
-            QObject::connect(currentLabelDialog, &LabelDialog::finished, [this]() {
-                currentLabelDialog = nullptr;
-            });
-            currentLabelDialog->show();
-        } else {
-            currentLabelDialog->activateWindow();
+        if (currentLabelDialog) {
+            currentLabelDialog->close();
+            delete currentLabelDialog;
         }
+        currentLabelDialog = new LabelDialog(&current_label[focus_box_index], label_mode);
+        connect(currentLabelDialog, &LabelDialog::finished, this, [this](int result) {
+            if (result == QDialog::Accepted) {
+                emit labelChanged(current_label);
+                update();
+            }
+            currentLabelDialog = nullptr;
+            this->setFocus(); // 确保 DrawOnPic 重新获得焦点
+        });
+        currentLabelDialog->show();
+    } else {
+        qDebug() << "No box selected for editing";
     }
 }
+
+bool DrawOnPic::event(QEvent *event) {
+    if (event->type() == QEvent::KeyPress) {
+        keyPressEvent(static_cast<QKeyEvent*>(event));
+        return true;
+    }
+    return QLabel::event(event);
+}
+
 void DrawOnPic::keyPressEvent(QKeyEvent *event) {
     switch (event->key()) {
         case Qt::Key_Escape:
@@ -396,9 +419,10 @@ void DrawOnPic::keyPressEvent(QKeyEvent *event) {
             }
             break;
         case Qt::Key_D:
-           qDebug()<<"worisinidema";
+            qDebug() << "D key pressed in DrawOnPic";
             openLabelDialog();
             break;
+
 
 #pragma region 复制粘贴
         case Qt::Key_C: // Ctrl+C复制选中
