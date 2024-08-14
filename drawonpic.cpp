@@ -291,7 +291,6 @@ void DrawOnPic::mouseDoubleClickEvent(QMouseEvent *event) {
 
 void DrawOnPic::wheelEvent(QWheelEvent *event) {
     if (!img) return;  // 确保图像已加载
-
     const double delta = (event->delta() > 0) ? 1.1 : 1 / 1.1;
 
     // 获取当前显示的图像中心
@@ -300,14 +299,13 @@ void DrawOnPic::wheelEvent(QWheelEvent *event) {
     // 计算当前图像的显示大小
     QRectF currentRect = img2label.mapRect(QRectF(0, 0, img->width(), img->height()));
 
-    // 计算最小缩放比例
+    // 计算最小缩放比例（确保最长边覆盖整个窗口）
     double scaleX = this->width() / (double)img->width();
     double scaleY = this->height() / (double)img->height();
-    double minScale = qMax(scaleX, scaleY);
+    double minScale = qMin(scaleX, scaleY);  // 使用qMin而不是qMax
 
     // 计算当前的缩放比例
     double currentScale = qMin(currentRect.width() / img->width(), currentRect.height() / img->height());
-
     qDebug() << "Before scaling - Current scale:" << currentScale << "Min scale:" << minScale;
 
     // 如果正在缩小并且已经接近或达到最小尺寸，直接设置为最小尺寸
@@ -316,7 +314,6 @@ void DrawOnPic::wheelEvent(QWheelEvent *event) {
         fitTransform.scale(minScale, minScale);
         fitTransform.translate(-img->width()/2, -img->height()/2);
         fitTransform.translate(this->width()/(2*minScale), this->height()/(2*minScale));
-
         img2label = fitTransform;
         qDebug() << "Set to min scale:" << minScale;
         update();
@@ -324,7 +321,6 @@ void DrawOnPic::wheelEvent(QWheelEvent *event) {
     }
 
     QTransform delta_transform;
-
     if (delta > 1) {
         // 放大操作：以鼠标位置为中心
         double mx = event->pos().x();
@@ -338,18 +334,22 @@ void DrawOnPic::wheelEvent(QWheelEvent *event) {
     // 应用变换
     QTransform newTransform = img2label * delta_transform;
 
-    // 检查新的变换是否会导致图像小于窗口
+    // 检查新的变换是否会导致图像小于最小缩放比例
     QRectF newRect = newTransform.mapRect(QRectF(0, 0, img->width(), img->height()));
-    if (newRect.width() >= this->width() || newRect.height() >= this->height()) {
-        // 只有在缩放后图像仍然大于或等于窗口时才应用新的变换
-        img2label = newTransform;
+    double newScale = qMin(newRect.width() / img->width(), newRect.height() / img->height());
 
-        // 计算并打印新的缩放比例
-        QRectF scaledRect = img2label.mapRect(QRectF(0, 0, img->width(), img->height()));
-        double newScale = qMin(scaledRect.width() / img->width(), scaledRect.height() / img->height());
+    if (newScale >= minScale) {
+        // 只有在缩放后图像仍然大于或等于最小缩放比例时才应用新的变换
+        img2label = newTransform;
         qDebug() << "After scaling - New scale:" << newScale;
     } else {
-        qDebug() << "Scaling prevented - At minimum scale:" << minScale;
+        // 如果低于最小缩放比例，则设置为最小缩放
+        QTransform minTransform;
+        minTransform.scale(minScale, minScale);
+        minTransform.translate(-img->width()/2, -img->height()/2);
+        minTransform.translate(this->width()/(2*minScale), this->height()/(2*minScale));
+        img2label = minTransform;
+        qDebug() << "Set to min scale:" << minScale;
     }
 
     update(); // 确保重绘
