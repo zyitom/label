@@ -17,10 +17,6 @@
 #include "mainwindow.h"
 #include "labeldialog.h"
 
-void DrawOnPic::saveStateForUndo() {
-    undoStack.push(current_label);
-}
-
 DrawOnPic::DrawOnPic(QWidget *parent) : QLabel(parent), model() {
     pen_point_focus.setWidth(5);
     pen_point_focus.setColor(Qt::green);
@@ -266,16 +262,11 @@ void DrawOnPic::mouseReleaseEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton) {
         switch (mode) {
         case NORMAL_MODE:   // 松开左键，停止拖动定位点
-            if (draging) {
-                saveStateForUndo();  // 保存拖动前的状态
-                draging = nullptr;
-                emit labelChanged(current_label);  // 通知标签已更改
-            }
+            draging = nullptr;
             break;
         case ADDING_MODE:   // 松开左键，添加一个定位点
             adding.append(norm2img.inverted().map(img2label.inverted().map(pos)));
             if (adding.size() == 4 + (label_mode == Wind)) {
-                saveStateForUndo();  // 保存添加新标注前的状态
                 box_t box;
                 for (int i = 0; i < 4 + (label_mode == Wind); ++i) box.pts[i] = adding[i];
                 current_label.append(box);
@@ -289,7 +280,6 @@ void DrawOnPic::mouseReleaseEvent(QMouseEvent *event) {
         }
     }
 }
-
 void DrawOnPic::mouseDoubleClickEvent(QMouseEvent *event) {
     if (event->button() == Qt::RightButton) {
         // 右键双击恢复默认视图
