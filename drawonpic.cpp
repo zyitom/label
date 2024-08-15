@@ -107,6 +107,8 @@ void DrawOnPic::mousePressEvent(QMouseEvent *event) {
                             if (draging == current_label[i].pts + j) {
                                 focus_box_index = i;
                                 focus_point_index = j;
+                                // 记录初始状态
+                                undoStack.push_back({i, j, *draging});
                                 break;
                             }
                         }
@@ -387,6 +389,38 @@ bool DrawOnPic::event(QEvent *event) {
 }
 
 void DrawOnPic::keyPressEvent(QKeyEvent *event) {
+    if (event->modifiers() & Qt::ControlModifier) {
+        switch (event->key()) {
+        case Qt::Key_Z:  // Ctrl+Z: 撤销
+            if (!undoStack.isEmpty()) {
+                BoxState lastState = undoStack.takeLast();
+                current_label[lastState.boxIndex].pts[lastState.pointIndex] = lastState.oldPosition;
+                update();
+                emit labelChanged(current_label);
+            }
+            return;  // 处理完 Ctrl+Z 后直接返回
+        case Qt::Key_C:  // 保留原有的 Ctrl+C 功能
+            if (focus_box_index >= 0) {
+                auto box_data = QByteArray((char *) &current_label[focus_box_index], sizeof(box_t));
+                auto *mime_data = new QMimeData();
+                mime_data->setData("box_t", box_data);
+                QApplication::clipboard()->setMimeData(mime_data);
+            }
+            return;
+        case Qt::Key_V:  // 保留原有的 Ctrl+V 功能
+        {
+            auto mime_data = QApplication::clipboard()->mimeData();
+            if (mime_data->hasFormat("box_t")) {
+                auto box_to_paste = *(box_t *) mime_data->data("box_t").data();
+                current_label.append(box_to_paste);
+                focus_box_index = current_label.count() - 1;
+                emit labelChanged(current_label);
+                update();
+            }
+        }
+            return;
+        }
+    }
     switch (event->key()) {
         case Qt::Key_Escape:
             if (currentLabelDialog) {

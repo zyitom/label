@@ -104,7 +104,13 @@ signals:
     void update_list_name_signal(const LabelMode mode);
 
 private:
-    QStack<QVector<box_t>> undoStack;
+    struct BoxState {
+        int boxIndex;
+        int pointIndex;
+        QPointF oldPosition;
+    };
+    QVector<BoxState> undoStack;
+
     void saveStateForUndo();
 
     LabelDialog* currentLabelDialog = nullptr;
