@@ -397,27 +397,33 @@ void DrawOnPic::keyPressEvent(QKeyEvent *event) {
                 current_label[lastState.boxIndex].pts[lastState.pointIndex] = lastState.oldPosition;
                 update();
                 emit labelChanged(current_label);
-            }
-            return;  // 处理完 Ctrl+Z 后直接返回
-        case Qt::Key_C:  // 保留原有的 Ctrl+C 功能
-            if (focus_box_index >= 0) {
-                auto box_data = QByteArray((char *) &current_label[focus_box_index], sizeof(box_t));
-                auto *mime_data = new QMimeData();
-                mime_data->setData("box_t", box_data);
-                QApplication::clipboard()->setMimeData(mime_data);
+            } else if (!lastSmartLabels.isEmpty()) {
+                // 如果没有点的修改可以撤销，但有上一次的智能标注，则撤销智能标注
+                current_label = lastSmartLabels;
+                lastSmartLabels.clear();
+                update();
+                emit labelChanged(current_label);
             }
             return;
-        case Qt::Key_V:  // 保留原有的 Ctrl+V 功能
-        {
-            auto mime_data = QApplication::clipboard()->mimeData();
-            if (mime_data->hasFormat("box_t")) {
-                auto box_to_paste = *(box_t *) mime_data->data("box_t").data();
-                current_label.append(box_to_paste);
-                focus_box_index = current_label.count() - 1;
-                emit labelChanged(current_label);
-                update();
-            }
-        }
+        // case Qt::Key_C:  // 保留原有的 Ctrl+C 功能
+        //     if (focus_box_index >= 0) {
+        //         auto box_data = QByteArray((char *) &current_label[focus_box_index], sizeof(box_t));
+        //         auto *mime_data = new QMimeData();
+        //         mime_data->setData("box_t", box_data);
+        //         QApplication::clipboard()->setMimeData(mime_data);
+        //     }
+        //     return;
+        // case Qt::Key_V:  // 保留原有的 Ctrl+V 功能
+        // {
+        //     auto mime_data = QApplication::clipboard()->mimeData();
+        //     if (mime_data->hasFormat("box_t")) {
+        //         auto box_to_paste = *(box_t *) mime_data->data("box_t").data();
+        //         current_label.append(box_to_paste);
+        //         focus_box_index = current_label.count() - 1;
+        //         emit labelChanged(current_label);
+        //         update();
+        //     }
+        // }
             return;
         }
     }
@@ -841,6 +847,9 @@ void DrawOnPic::removeBox(QVector<box_t>::iterator box_iter) {
 void DrawOnPic::smart() {
     // 对当前图片进行一次智能标注。
     if (current_file.isEmpty()) return;
+
+    lastSmartLabels = current_label;
+
     using namespace std::chrono;
     auto t1 = high_resolution_clock::now(); // 统计运行时间
     if (!model.run(current_file, current_label)) {

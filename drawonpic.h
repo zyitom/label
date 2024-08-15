@@ -104,6 +104,7 @@ signals:
     void update_list_name_signal(const LabelMode mode);
 
 private:
+    QVector<box_t> lastSmartLabels;
     struct BoxState {
         int boxIndex;
         int pointIndex;
