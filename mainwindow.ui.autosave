@@ -14,7 +14,7 @@
    <string>LabelMaster 1.3.6</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,1,0">
+   <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0,0">
     <item>
      <widget class="QGroupBox" name="groupBox">
       <property name="sizePolicy">
@@ -57,22 +57,33 @@
            </item>
            <item>
             <property name="text">
-             <string>风车</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>工程</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
              <string>风车装甲板</string>
             </property>
            </item>
           </widget>
          </item>
         </layout>
+       </item>
+       <item>
+        <widget class="QPushButton" name="selectModelPushButton">
+         <property name="text">
+          <string>选择模型</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="modelTypeComboBox">
+         <item>
+          <property name="text">
+           <string>YOLOX</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>YOLOv5</string>
+          </property>
+         </item>
+        </widget>
        </item>
        <item>
         <widget class="QPushButton" name="openDirectoryPushButton">

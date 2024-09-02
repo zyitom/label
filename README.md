@@ -1,6 +1,10 @@
 **<div align=middle><p style="font-size: 2.7em;">LabelMaster指南 v1.0</p><div align=left>**
 <div align=right><p style="font-size: 1.3em;">南工骁鹰</p><div align=left>
 
+
+根据这个里面添加了一些逻辑比如按下d修改类，增加了撤回逻辑以及自动缩放用于精准标注
+
+
 # 目录
 - [目录](#目录)
 - [更新日志](#更新日志)

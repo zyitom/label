@@ -245,6 +245,7 @@ void MainWindow::on_fileListHorizontalSlider_rangeChanged(int min, int max) {
 
 void MainWindow::on_modeComboBox_currentIndexChanged(int i){
     ui->label->label_mode = LabelMode(i);
+    //qDebug() <<i;
     ui->label->load_svg();
     ui->label->configure.last_mode = i;
     on_label_labelChanged(ui->label->get_current_label()); // 立即更新右侧标签列表

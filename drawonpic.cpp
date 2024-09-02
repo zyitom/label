@@ -404,7 +404,7 @@ void DrawOnPic::keyPressEvent(QKeyEvent *event) {
                 update();
                 emit labelChanged(current_label);
             }
-            return;
+
         // case Qt::Key_C:  // 保留原有的 Ctrl+C 功能
         //     if (focus_box_index >= 0) {
         //         auto box_data = QByteArray((char *) &current_label[focus_box_index], sizeof(box_t));
@@ -457,14 +457,14 @@ void DrawOnPic::keyPressEvent(QKeyEvent *event) {
 
 
 #pragma region 复制粘贴
-        case Qt::Key_C: // Ctrl+C复制选中
-            if (focus_box_index >= 0 && event->modifiers().testFlag(Qt::ControlModifier)) {
-                auto box_data = QByteArray((char *) &current_label[focus_box_index], sizeof(box_t));
-                auto *mime_data = new QMimeData();
-                mime_data->setData("box_t", box_data);
-                QApplication::clipboard()->setMimeData(mime_data);
-            }
-            break;
+        // case Qt::Key_C: // Ctrl+C复制选中
+        //     if (focus_box_index >= 0 && event->modifiers().testFlag(Qt::ControlModifier)) {
+        //         auto box_data = QByteArray((char *) &current_label[focus_box_index], sizeof(box_t));
+        //         auto *mime_data = new QMimeData();
+        //         mime_data->setData("box_t", box_data);
+        //         QApplication::clipboard()->setMimeData(mime_data);
+        //     }
+        //     break;
         case Qt::Key_V: // Ctrl+V粘贴前面复制的
             if (event->modifiers().testFlag(Qt::ControlModifier)) {
                 auto mime_data = QApplication::clipboard()->mimeData();
@@ -560,6 +560,12 @@ void DrawOnPic::keyPressEvent(QKeyEvent *event) {
             else
                 banned_point_index = -1;
             break;
+        case Qt::Key_C:
+            showSvg = !showSvg;  // 切换SVG显示状态
+            update();  // 重绘界面
+            qDebug() << "No box selected for editingeaijofnioaehdfioashoisadas";
+            break;
+            return;
 #pragma endregion
 
 #pragma region 多步删除当前文件
@@ -649,8 +655,10 @@ void DrawOnPic::paintEvent(QPaintEvent *) {
         QTransform transform;
         QTransform::quadToQuad(pts_on_painter, pts_for_show, transform);
         // 绘制svg
-        painter.setTransform(transform);
-        standard_tag_render[box.tag_id].render(&painter);
+        if (showSvg) {
+            painter.setTransform(transform);
+            standard_tag_render[box.tag_id].render(&painter);
+        }
         // 绘制目标四边形边框
         if (i == focus_box_index) {
             painter.setPen(pen_box_focus);

@@ -14,9 +14,10 @@ class LabelDialog;
 
 enum LabelMode{
     Armor,
+    Wind_Armor,
     Wind,
-    Engineer,
-    Wind_Armor
+    Engineer
+
 };
 
 class DrawOnPic : public QLabel {
@@ -174,6 +175,9 @@ private:
         ADDING_MODE,
         COVER_MODE,
     } mode = NORMAL_MODE;
+
+    bool showSvg = true;
+
 };
 
 #endif // DRAWONPIC_H
