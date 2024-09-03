@@ -9,6 +9,7 @@
 #include "model.hpp"
 #include "configure.hpp"
 #include <QStack>
+#include <QDateTime>
 class LabelDialog;
 #define NULL_IMG cv::Mat(0, 0, CV_8UC1)
 
@@ -177,6 +178,12 @@ private:
     } mode = NORMAL_MODE;
 
     bool showSvg = true;
+    QPointF transformedCorners[4];
+    QImage transformedImage;
+    QTransform svg2painter;
+    int label_to_size(int label, LabelMode mode) const;
+    bool is_big(const box_t& box) const;
+    void performTransformation(const box_t& box);
 
 };
 

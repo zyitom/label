@@ -258,7 +258,80 @@ void DrawOnPic::mouseMoveEvent(QMouseEvent *event) {
         }
     }
 }
+void DrawOnPic::performTransformation(const box_t& box) {
+    // Define SVG's original vertices (entire SVG, not just the label area)
+    QPointF svgCorners[4];
+    if (is_big(box)) {
+        svgCorners[0] = QPointF(0, 0);
+        svgCorners[1] = QPointF(871, 0);
+        svgCorners[2] = QPointF(871, 478);
+        svgCorners[3] = QPointF(0, 478);
+    } else {
+        svgCorners[0] = QPointF(0, 0);
+        svgCorners[1] = QPointF(557, 0);
+        svgCorners[2] = QPointF(557, 516);
+        svgCorners[3] = QPointF(0, 516);
+    }
 
+    // Calculate transformation matrix
+    QPolygonF svgPolygon = is_big(box) ? big_pts : small_pts;
+    QPolygonF imagePolygon;
+    for (int i = 0; i < 4; ++i) {
+        imagePolygon.append(norm2img.map(box.pts[i]));
+    }
+
+    QTransform transform;
+    QTransform::quadToQuad(svgPolygon, imagePolygon, transform);
+
+    // Calculate transformed vertices in image coordinates
+    QPointF transformedCorners[4];
+    for (int i = 0; i < 4; ++i) {
+        transformedCorners[i] = transform.map(svgCorners[i]);
+    }
+
+    // Create transformed image
+    QRect boundingRect = QPolygonF(QVector<QPointF>(std::begin(transformedCorners), std::end(transformedCorners))).boundingRect().toRect();
+    QImage transformedImage(boundingRect.size(), QImage::Format_ARGB32_Premultiplied);
+    transformedImage.fill(Qt::transparent);
+
+    QPainter painter(&transformedImage);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setTransform(transform * QTransform::fromTranslate(-boundingRect.topLeft().x(), -boundingRect.topLeft().y()));
+    standard_tag_render[box.tag_id].render(&painter);
+
+    // Save transformed image
+    QString filename = QString("transformed_%1.jpg").arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
+    transformedImage.save(filename);
+
+    // Save the coordinates of the transformed corners
+    QFile file(filename + ".txt");
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream stream(&file);
+        for (int i = 0; i < 4; ++i) {
+            stream << transformedCorners[i].x() << " " << transformedCorners[i].y() << "\n";
+        }
+    }
+
+    // Print the coordinates to console for debugging
+    qDebug() << "Transformed SVG corners in image coordinates:";
+    for (int i = 0; i < 4; ++i) {
+        qDebug() << "Corner" << i << ":" << transformedCorners[i];
+    }
+}
+
+int DrawOnPic::label_to_size(int label, LabelMode mode) const  // Add 'const' here
+{
+    if(mode == Armor)
+        return label == 1 || label > 7;
+    else if(mode == Engineer)
+        return label == 4;
+    else
+        return 0;
+}
+
+bool DrawOnPic::is_big(const box_t& box) const {
+    return label_to_size(box.tag_id, label_mode);
+}
 void DrawOnPic::mouseReleaseEvent(QMouseEvent *event) {
     pos = event->pos();
     if (event->button() == Qt::LeftButton) {
@@ -266,12 +339,13 @@ void DrawOnPic::mouseReleaseEvent(QMouseEvent *event) {
         case NORMAL_MODE:   // 松开左键，停止拖动定位点
             draging = nullptr;
             break;
-        case ADDING_MODE:   // 松开左键，添加一个定位点
+        case ADDING_MODE:
             adding.append(norm2img.inverted().map(img2label.inverted().map(pos)));
             if (adding.size() == 4 + (label_mode == Wind)) {
                 box_t box;
                 for (int i = 0; i < 4 + (label_mode == Wind); ++i) box.pts[i] = adding[i];
                 current_label.append(box);
+                performTransformation(current_label.last());  // 新添加的函数调用
                 setNormalMode();
                 emit labelChanged(current_label);
             }
