@@ -336,20 +336,46 @@ double DrawOnPic::calculateArea(const QVector<QPointF>& points) {
 }
 
 QTransform DrawOnPic::calculateNormalizingTransform(const QVector<QPointF>& points) {
-    QPointF topLeft = points[0];
-    QPointF topRight = points[1];
-    QPointF bottomRight = points[2];
-    QPointF bottomLeft = points[3];
+    // 确保我们有四个点
+    if (points.size() != 4) {
+        qDebug() << "Error: Expecting 4 points, got" << points.size();
+        return QTransform();
+    }
 
-    double width = QLineF(topLeft, topRight).length();
-    double height = QLineF(topLeft, bottomLeft).length();
+    // 找出左上角点（x和y坐标之和最小的点）
+    int topLeftIndex = 0;
+    double minSum = points[0].x() + points[0].y();
+    for (int i = 1; i < 4; ++i) {
+        double sum = points[i].x() + points[i].y();
+        if (sum < minSum) {
+            minSum = sum;
+            topLeftIndex = i;
+        }
+    }
 
+    // 重新排序点，使左上角点为第一个
+    QVector<QPointF> orderedPoints;
+    for (int i = 0; i < 4; ++i) {
+        orderedPoints.append(points[(topLeftIndex + i) % 4]);
+    }
+
+    QPointF topLeft = orderedPoints[0];
+    QPointF topRight = orderedPoints[1];
+    QPointF bottomRight = orderedPoints[2];
+    QPointF bottomLeft = orderedPoints[3];
+
+    // 计算新的宽度和高度
+    double width = qMax(QLineF(topLeft, topRight).length(), QLineF(bottomLeft, bottomRight).length());
+    double height = qMax(QLineF(topLeft, bottomLeft).length(), QLineF(topRight, bottomRight).length());
+
+    // 创建源多边形和目标多边形
     QPolygonF src;
     src << topLeft << topRight << bottomRight << bottomLeft;
 
     QPolygonF dst;
     dst << QPointF(0, 0) << QPointF(width, 0) << QPointF(width, height) << QPointF(0, height);
 
+    // 计算变换
     QTransform transform;
     QTransform::quadToQuad(src, dst, transform);
 
@@ -366,7 +392,7 @@ void DrawOnPic::saveTransformedImage(const QImage& originalImage, const QVector<
         pixelPoints.append(QPointF(point.x() * originalImage.width(), point.y() * originalImage.height()));
     }
 
-    // 计算包围标记区域的矩形
+    // 计算包围所有点的矩形
     qreal minX = std::numeric_limits<qreal>::max();
     qreal minY = std::numeric_limits<qreal>::max();
     qreal maxX = std::numeric_limits<qreal>::lowest();
@@ -379,8 +405,15 @@ void DrawOnPic::saveTransformedImage(const QImage& originalImage, const QVector<
         maxY = qMax(maxY, point.y());
     }
 
+    // 扩大矩形以包含所有点（添加一些边距）
+    int margin = 10; // 可以根据需要调整
+    QRect cropRect(QPoint(qFloor(minX) - margin, qFloor(minY) - margin),
+                   QPoint(qCeil(maxX) + margin, qCeil(maxY) + margin));
+
+    // 确保cropRect在原图范围内
+    cropRect = cropRect.intersected(originalImage.rect());
+
     // 裁剪原图
-    QRect cropRect(QPoint(qFloor(minX), qFloor(minY)), QPoint(qCeil(maxX), qCeil(maxY)));
     QImage croppedImage = originalImage.copy(cropRect);
 
     // 计算裁剪后的点坐标
@@ -389,33 +422,15 @@ void DrawOnPic::saveTransformedImage(const QImage& originalImage, const QVector<
         croppedPoints.append(point - cropRect.topLeft());
     }
 
-    // 计算仿射变换
-    QTransform transform = calculateNormalizingTransform(croppedPoints);
+    // 保存裁剪后的图像
+    croppedImage.save(filename);
 
-    // 计算变换后的图像大小
-    QRectF boundingRect = transform.mapRect(QRectF(0, 0, croppedImage.width(), croppedImage.height()));
-    int newWidth = qCeil(boundingRect.width());
-    int newHeight = qCeil(boundingRect.height());
-
-    // 创建并填充变换后的图像
-    QImage transformedImage(newWidth, newHeight, QImage::Format_ARGB32);
-    transformedImage.fill(Qt::transparent);
-
-    QPainter painter(&transformedImage);
-    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
-    painter.setTransform(transform.inverted());
-    painter.drawImage(QPointF(0, 0), croppedImage);
-    painter.end();
-
-    transformedImage.save(filename);
-
-    // 保存原始点在变换后图像中的坐标
+    // 保存原始点在裁剪图像中的坐标
     QFile coordFile(filename + "_coordinates.txt");
     if (coordFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream stream(&coordFile);
         for (const auto& point : croppedPoints) {
-            QPointF transformedPoint = transform.map(point);
-            stream << qRound(transformedPoint.x()) << " " << qRound(transformedPoint.y()) << "\n";
+            stream << qRound(point.x()) << " " << qRound(point.y()) << "\n";
         }
     }
 
@@ -424,21 +439,16 @@ void DrawOnPic::saveTransformedImage(const QImage& originalImage, const QVector<
     for (const auto& point : normalizedPoints) {
         qDebug() << point;
     }
-    qDebug() << "Pixel points:";
+    qDebug() << "Pixel points in original image:";
     for (const auto& point : pixelPoints) {
         qDebug() << point;
     }
-    qDebug() << "Cropped points:";
+    qDebug() << "Points in cropped image:";
     for (const auto& point : croppedPoints) {
         qDebug() << point;
     }
-    qDebug() << "Transformed points:";
-    for (const auto& point : croppedPoints) {
-        QPointF transformedPoint = transform.map(point);
-        qDebug() << transformedPoint;
-    }
     qDebug() << "Crop rect:" << cropRect;
-    qDebug() << "New image size:" << newWidth << "x" << newHeight;
+    qDebug() << "Cropped image size:" << croppedImage.width() << "x" << croppedImage.height();
 }
 int DrawOnPic::label_to_size(int label, LabelMode mode) const  // Add 'const' here
 {
