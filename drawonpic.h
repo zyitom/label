@@ -184,7 +184,10 @@ private:
     int label_to_size(int label, LabelMode mode) const;
     bool is_big(const box_t& box) const;
     void performTransformation(const box_t& box);
-
+    QPointF calculateCenter(const QVector<QPointF>& points);
+    double calculateArea(const QVector<QPointF>& points);
+    QTransform calculateNormalizingTransform(const QVector<QPointF>& points);
+    void saveTransformedImage(const QImage& originalImage, const QVector<QPointF>& points, const QString& filename);
 };
 
 #endif // DRAWONPIC_H

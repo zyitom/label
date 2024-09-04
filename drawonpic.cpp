@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include "mainwindow.h"
 #include "labeldialog.h"
-
+#include <QtMath>
 DrawOnPic::DrawOnPic(QWidget *parent) : QLabel(parent), model() {
     pen_point_focus.setWidth(5);
     pen_point_focus.setColor(Qt::green);
@@ -318,7 +318,128 @@ void DrawOnPic::performTransformation(const box_t& box) {
         qDebug() << "Corner" << i << ":" << transformedCorners[i];
     }
 }
+QPointF DrawOnPic::calculateCenter(const QVector<QPointF>& points) {
+    QPointF center(0, 0);
+    for (const auto& point : points) {
+        center += point;
+    }
+    return center / points.size();
+}
 
+double DrawOnPic::calculateArea(const QVector<QPointF>& points) {
+    double area = 0.0;
+    for (int i = 0; i < points.size(); i++) {
+        int j = (i + 1) % points.size();
+        area += (points[i].x() * points[j].y() - points[j].x() * points[i].y());
+    }
+    return qAbs(area) / 2.0;
+}
+
+QTransform DrawOnPic::calculateNormalizingTransform(const QVector<QPointF>& points) {
+    QPointF topLeft = points[0];
+    QPointF topRight = points[1];
+    QPointF bottomRight = points[2];
+    QPointF bottomLeft = points[3];
+
+    double width = QLineF(topLeft, topRight).length();
+    double height = QLineF(topLeft, bottomLeft).length();
+
+    QPolygonF src;
+    src << topLeft << topRight << bottomRight << bottomLeft;
+
+    QPolygonF dst;
+    dst << QPointF(0, 0) << QPointF(width, 0) << QPointF(width, height) << QPointF(0, height);
+
+    QTransform transform;
+    QTransform::quadToQuad(src, dst, transform);
+
+    qDebug() << "Normalizing transform:";
+    qDebug() << transform;
+
+    return transform;
+}
+
+void DrawOnPic::saveTransformedImage(const QImage& originalImage, const QVector<QPointF>& normalizedPoints, const QString& filename) {
+    // 将归一化坐标转换为像素坐标
+    QVector<QPointF> pixelPoints;
+    for (const auto& point : normalizedPoints) {
+        pixelPoints.append(QPointF(point.x() * originalImage.width(), point.y() * originalImage.height()));
+    }
+
+    // 计算包围标记区域的矩形
+    qreal minX = std::numeric_limits<qreal>::max();
+    qreal minY = std::numeric_limits<qreal>::max();
+    qreal maxX = std::numeric_limits<qreal>::lowest();
+    qreal maxY = std::numeric_limits<qreal>::lowest();
+
+    for (const auto& point : pixelPoints) {
+        minX = qMin(minX, point.x());
+        minY = qMin(minY, point.y());
+        maxX = qMax(maxX, point.x());
+        maxY = qMax(maxY, point.y());
+    }
+
+    // 裁剪原图
+    QRect cropRect(QPoint(qFloor(minX), qFloor(minY)), QPoint(qCeil(maxX), qCeil(maxY)));
+    QImage croppedImage = originalImage.copy(cropRect);
+
+    // 计算裁剪后的点坐标
+    QVector<QPointF> croppedPoints;
+    for (const auto& point : pixelPoints) {
+        croppedPoints.append(point - cropRect.topLeft());
+    }
+
+    // 计算仿射变换
+    QTransform transform = calculateNormalizingTransform(croppedPoints);
+
+    // 计算变换后的图像大小
+    QRectF boundingRect = transform.mapRect(QRectF(0, 0, croppedImage.width(), croppedImage.height()));
+    int newWidth = qCeil(boundingRect.width());
+    int newHeight = qCeil(boundingRect.height());
+
+    // 创建并填充变换后的图像
+    QImage transformedImage(newWidth, newHeight, QImage::Format_ARGB32);
+    transformedImage.fill(Qt::transparent);
+
+    QPainter painter(&transformedImage);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+    painter.setTransform(transform.inverted());
+    painter.drawImage(QPointF(0, 0), croppedImage);
+    painter.end();
+
+    transformedImage.save(filename);
+
+    // 保存原始点在变换后图像中的坐标
+    QFile coordFile(filename + "_coordinates.txt");
+    if (coordFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream stream(&coordFile);
+        for (const auto& point : croppedPoints) {
+            QPointF transformedPoint = transform.map(point);
+            stream << qRound(transformedPoint.x()) << " " << qRound(transformedPoint.y()) << "\n";
+        }
+    }
+
+    // 打印调试信息
+    qDebug() << "Original normalized points:";
+    for (const auto& point : normalizedPoints) {
+        qDebug() << point;
+    }
+    qDebug() << "Pixel points:";
+    for (const auto& point : pixelPoints) {
+        qDebug() << point;
+    }
+    qDebug() << "Cropped points:";
+    for (const auto& point : croppedPoints) {
+        qDebug() << point;
+    }
+    qDebug() << "Transformed points:";
+    for (const auto& point : croppedPoints) {
+        QPointF transformedPoint = transform.map(point);
+        qDebug() << transformedPoint;
+    }
+    qDebug() << "Crop rect:" << cropRect;
+    qDebug() << "New image size:" << newWidth << "x" << newHeight;
+}
 int DrawOnPic::label_to_size(int label, LabelMode mode) const  // Add 'const' here
 {
     if(mode == Armor)
@@ -344,8 +465,32 @@ void DrawOnPic::mouseReleaseEvent(QMouseEvent *event) {
             if (adding.size() == 4 + (label_mode == Wind)) {
                 box_t box;
                 for (int i = 0; i < 4 + (label_mode == Wind); ++i) box.pts[i] = adding[i];
+
+                // 计算并保存面积
+                double area = calculateArea(adding);
+
+                // 计算中心点
+                QPointF center = calculateCenter(adding);
+
+                // 保存原始坐标和面积
+                QString coordFilename = QString("original_coordinates_%1.txt").arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
+                QFile coordFile(coordFilename);
+                if (coordFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                    QTextStream stream(&coordFile);
+                    stream << "Original Coordinates:\n";
+                    for (const auto& point : adding) {
+                        stream << point.x() << " " << point.y() << "\n";
+                    }
+                    stream << "Area: " << area << "\n";
+                    stream << "Center: " << center.x() << " " << center.y() << "\n";
+                }
+
+                // 保存变换后的图像和坐标
+                QString imageFilename = QString("transformed_%1.png").arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
+                saveTransformedImage(*img, adding, imageFilename);
+
                 current_label.append(box);
-                performTransformation(current_label.last());  // 新添加的函数调用
+                performTransformation(current_label.last());
                 setNormalMode();
                 emit labelChanged(current_label);
             }
