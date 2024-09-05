@@ -259,63 +259,79 @@ void DrawOnPic::mouseMoveEvent(QMouseEvent *event) {
     }
 }
 void DrawOnPic::performTransformation(const box_t& box) {
-    // Define SVG's original vertices (entire SVG, not just the label area)
-    QPointF svgCorners[4];
-    if (is_big(box)) {
-        svgCorners[0] = QPointF(0, 0);
-        svgCorners[1] = QPointF(871, 0);
-        svgCorners[2] = QPointF(871, 478);
-        svgCorners[3] = QPointF(0, 478);
-    } else {
-        svgCorners[0] = QPointF(0, 0);
-        svgCorners[1] = QPointF(557, 0);
-        svgCorners[2] = QPointF(557, 516);
-        svgCorners[3] = QPointF(0, 516);
-    }
-
-    // Calculate transformation matrix
-    QPolygonF svgPolygon = is_big(box) ? big_pts : small_pts;
-    QPolygonF imagePolygon;
+    // Calculate the bounding rectangle for the label points
+    QPolygonF labelPolygon;
     for (int i = 0; i < 4; ++i) {
-        imagePolygon.append(norm2img.map(box.pts[i]));
+        labelPolygon.append(norm2img.map(box.pts[i]));
+    }
+    QRect boundingRect = labelPolygon.boundingRect().toRect();
+
+    // Add some margin to the bounding rectangle
+    int margin = 10;
+    boundingRect.adjust(-margin, -margin, margin, margin);
+    boundingRect = boundingRect.intersected(img->rect());
+
+    // Crop the original image
+    QImage croppedImage = img->copy(boundingRect);
+
+    // Calculate the transformation from SVG to the cropped image
+    QPolygonF svgPolygon = is_big(box) ? big_pts : small_pts;
+    QPolygonF croppedPolygon;
+    for (int i = 0; i < 4; ++i) {
+        croppedPolygon.append(norm2img.map(box.pts[i]) - boundingRect.topLeft());
     }
 
     QTransform transform;
-    QTransform::quadToQuad(svgPolygon, imagePolygon, transform);
+    QTransform::quadToQuad(svgPolygon, croppedPolygon, transform);
 
-    // Calculate transformed vertices in image coordinates
-    QPointF transformedCorners[4];
-    for (int i = 0; i < 4; ++i) {
-        transformedCorners[i] = transform.map(svgCorners[i]);
-    }
+    // Create and save the cropped image
+    QString croppedFilename = QString("cropped_%1.png").arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
+    croppedImage.save(croppedFilename);
 
-    // Create transformed image
-    QRect boundingRect = QPolygonF(QVector<QPointF>(std::begin(transformedCorners), std::end(transformedCorners))).boundingRect().toRect();
-    QImage transformedImage(boundingRect.size(), QImage::Format_ARGB32_Premultiplied);
+    // Create the final transformed image
+    QImage transformedImage(croppedImage.size(), QImage::Format_ARGB32_Premultiplied);
     transformedImage.fill(Qt::transparent);
 
     QPainter painter(&transformedImage);
     painter.setRenderHint(QPainter::Antialiasing);
-    painter.setTransform(transform * QTransform::fromTranslate(-boundingRect.topLeft().x(), -boundingRect.topLeft().y()));
+    painter.setTransform(transform);
     standard_tag_render[box.tag_id].render(&painter);
 
-    // Save transformed image
-    QString filename = QString("transformed_%1.jpg").arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
-    transformedImage.save(filename);
+    // Save the final transformed image
+    QString transformedFilename = QString("transformed_%1.png").arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
+    transformedImage.save(transformedFilename);
 
-    // Save the coordinates of the transformed corners
-    QFile file(filename + ".txt");
+    // Calculate and save the coordinates of the original points in both cropped and transformed images
+    QFile file(transformedFilename + ".txt");
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream stream(&file);
+        stream << "Crop rect: " << boundingRect.x() << " " << boundingRect.y() << " "
+               << boundingRect.width() << " " << boundingRect.height() << "\n";
+        stream << "Points in cropped image:\n";
         for (int i = 0; i < 4; ++i) {
-            stream << transformedCorners[i].x() << " " << transformedCorners[i].y() << "\n";
+            QPointF croppedPoint = norm2img.map(box.pts[i]) - boundingRect.topLeft();
+            stream << croppedPoint.x() << " " << croppedPoint.y() << "\n";
+        }
+        stream << "Points in transformed image:\n";
+        for (int i = 0; i < 4; ++i) {
+            QPointF croppedPoint = norm2img.map(box.pts[i]) - boundingRect.topLeft();
+            QPointF transformedPoint = transform.map(croppedPoint);
+            stream << transformedPoint.x() << " " << transformedPoint.y() << "\n";
         }
     }
 
     // Print the coordinates to console for debugging
-    qDebug() << "Transformed SVG corners in image coordinates:";
+    qDebug() << "Crop rect:" << boundingRect;
+    qDebug() << "Points in cropped image:";
     for (int i = 0; i < 4; ++i) {
-        qDebug() << "Corner" << i << ":" << transformedCorners[i];
+        QPointF croppedPoint = norm2img.map(box.pts[i]) - boundingRect.topLeft();
+        qDebug() << "Point" << i << ":" << croppedPoint;
+    }
+    qDebug() << "Points in transformed image:";
+    for (int i = 0; i < 4; ++i) {
+        QPointF croppedPoint = norm2img.map(box.pts[i]) - boundingRect.topLeft();
+        QPointF transformedPoint = transform.map(croppedPoint);
+        qDebug() << "Point" << i << ":" << transformedPoint;
     }
 }
 QPointF DrawOnPic::calculateCenter(const QVector<QPointF>& points) {
@@ -434,7 +450,7 @@ void DrawOnPic::saveTransformedImage(const QImage& originalImage, const QVector<
         }
     }
 
-    // 打印调试信息
+
     qDebug() << "Original normalized points:";
     for (const auto& point : normalizedPoints) {
         qDebug() << point;
