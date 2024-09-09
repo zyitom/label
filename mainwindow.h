@@ -57,6 +57,7 @@ private slots:
     
     void on_autoEnhanceVCheckBox_stateChanged(int check);
 
+    void on_selectModelPushButton_clicked();
 private:
     int lastEditedLabelIndex; // 记录最后编辑的标签索引
 

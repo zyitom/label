@@ -31,6 +31,7 @@ MainWindow::MainWindow(QWidget *parent, std::string path, int init_mode) :
     QObject::connect(ui->coverBrushButton, &QPushButton::clicked, ui->label, &DrawOnPic::cover_brush);
     QObject::connect(ui->label, &DrawOnPic::update_list_name_signal, [=](){update_list_name(ui->label->label_mode);});
     QObject::connect(ui->configurePushButton, &QPushButton::clicked, [=](){cdialog->show_configure();});
+    QObject::connect(ui->selectModelPushButton, &QPushButton::clicked, this, &MainWindow::on_selectModelPushButton_clicked);
     QObject::connect(ui->label, &DrawOnPic::delCurrentImage, [=]() {
         ui->label->enh_img = NULL_IMG;
         ui->label->modified_img = NULL_IMG;
@@ -157,6 +158,26 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
     return QMainWindow::eventFilter(obj, event);
 }
 
+void MainWindow::on_selectModelPushButton_clicked()
+{   static int callCount = 0;
+    qDebug() << "Function called " << ++callCount << " times";
+    QString fileName = QFileDialog::getOpenFileName(this,
+        tr("Select ONNX Model"), "",
+        tr("ONNX Models (*.onnx);;All Files (*)"));
+    if (!fileName.isEmpty())
+    {
+        // TODO: Handle the selected ONNX model file
+        // For example, you might want to store the file path or load the model
+        qDebug() << "Selected ONNX model:" << fileName;
+
+        // Optionally, update the UI to show the selected model
+        // For example, if you have a QLabel to display the selected model:
+        // ui->modelNameLabel->setText(QFileInfo(fileName).fileName());
+
+        // You might also want to call a function to load the model
+        // loadOnnxModel(fileName);
+    }
+}
 
 void MainWindow::onLabelDialogFinished(int result) {
     if (result == QDialog::Accepted) {

@@ -95,6 +95,8 @@ public slots:
 
     void cover_brush();
 
+    void verifyBoxes();
+
 signals:
 
     void openLabelDialogRequested(QVector<box_t>::iterator box_iter);
@@ -176,6 +178,7 @@ private:
         NORMAL_MODE,
         ADDING_MODE,
         COVER_MODE,
+        VERIFY_MODE
     } mode = NORMAL_MODE;
 
     bool showSvg = true;

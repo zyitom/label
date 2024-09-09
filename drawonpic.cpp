@@ -525,6 +525,76 @@ void DrawOnPic::mouseReleaseEvent(QMouseEvent *event) {
         }
     }
 }
+void DrawOnPic::verifyBoxes() {
+    if (current_file.isEmpty() || current_label.empty()) return;
+
+    TraditionalDetector detector;
+    cv::Mat src = cv::imread(current_file.toStdString());
+    if (src.empty()) {
+        qDebug() << "Error: Unable to read image file:" << current_file;
+        return;
+    }
+
+    for (auto &box : current_label) {
+        std::vector<cv::Point2f> points;
+        for (const auto &pt : box.pts) {
+            points.push_back(cv::Point2f(pt.x() * src.cols, pt.y() * src.rows));
+        }
+
+        DetectionResult result = detector.detectAndClassify(src, points);
+
+        if (result.confidence > 0.5) {
+            box.color_id = result.color_id;
+
+            if (result.number == "outpost") {
+                box.tag_id = 6;
+            } else if (result.number == "base") {
+                box.tag_id = result.type == Armor::Type::SMALL ? 7 : 8;
+            } else if (result.number == "guard") {
+                box.tag_id = 0;
+            } else {
+                int detectedNumber = -1;
+                bool isNumber = false;
+                try {
+                    detectedNumber = std::stoi(result.number);
+                    isNumber = true;
+                } catch (const std::exception& e) {
+                    qDebug() << "Failed to convert number:" << QString::fromStdString(result.number);
+                }
+
+                if (isNumber) {
+                    if (detectedNumber == 1 || detectedNumber == 2) {
+                        box.tag_id = detectedNumber;
+                    } else if (detectedNumber >= 3 && detectedNumber <= 5) {
+                        if (result.type == Armor::Type::SMALL) {
+                            box.tag_id = detectedNumber + 1; // 3, 4, 5 -> 4, 5, 6
+                        } else {
+                            box.tag_id = detectedNumber + 6; // 3, 4, 5 -> 9, 10, 11
+                        }
+                    } else {
+                        qDebug() << "Warning: Unrecognized armor number:" << detectedNumber;
+
+                    }
+                } else {
+                    qDebug() << "Warning: Invalid armor number:" << QString::fromStdString(result.number);
+
+                }
+            }
+
+            qDebug() << "Verified box:";
+            qDebug() << "Number:" << QString::fromStdString(result.number);
+            qDebug() << "Confidence:" << result.confidence;
+            qDebug() << "Type:" << (result.type == Armor::Type::SMALL ? "SMALL" : "LARGE");
+            qDebug() << "Color:" << QString::fromStdString(TraditionalDetector::colorToString(result.color));
+            qDebug() << "Assigned tag_id:" << box.tag_id;
+        } else {
+            qDebug() << "TraditionalDetector couldn't confidently classify a box. Keeping original results.";
+        }
+    }
+
+    emit labelChanged(current_label);
+    update();
+}
 void DrawOnPic::mouseDoubleClickEvent(QMouseEvent *event) {
     if (event->button() == Qt::RightButton) {
         // 右键双击恢复默认视图
@@ -707,19 +777,15 @@ void DrawOnPic::keyPressEvent(QKeyEvent *event) {
         //         mime_data->setData("box_t", box_data);
         //         QApplication::clipboard()->setMimeData(mime_data);
         //     }
-        //     break;
-        case Qt::Key_V: // Ctrl+V粘贴前面复制的
-            if (event->modifiers().testFlag(Qt::ControlModifier)) {
-                auto mime_data = QApplication::clipboard()->mimeData();
-                if (mime_data->hasFormat("box_t")) {
-                    auto box_to_paste = *(box_t *) mime_data->data("box_t").data();
-                    current_label.append(box_to_paste);
-                    focus_box_index = current_label.count() - 1;
-                    emit labelChanged(current_label);
-                    update();
-                }
-            }
-            break;
+        case Qt::Key_V:
+                    if (mode != VERIFY_MODE) {
+                        mode = VERIFY_MODE;
+                        verifyBoxes();
+                    } else {
+                        mode = NORMAL_MODE;
+                    }
+        update();
+        break;
 #pragma endregion
 
 #pragma region 切换移动模式
