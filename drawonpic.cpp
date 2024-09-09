@@ -488,7 +488,7 @@ void DrawOnPic::mouseReleaseEvent(QMouseEvent *event) {
             draging = nullptr;
             break;
         case ADDING_MODE:
-            adding.append(norm2img.inverted().map(img2label.inverted().map(pos)));
+                adding.append(norm2img.inverted().map(img2label.inverted().map(pos)));
             if (adding.size() == 4 + (label_mode == Wind)) {
                 box_t box;
                 for (int i = 0; i < 4 + (label_mode == Wind); ++i) box.pts[i] = adding[i];
@@ -500,67 +500,23 @@ void DrawOnPic::mouseReleaseEvent(QMouseEvent *event) {
                     break;
                 }
 
-                Light left_light, right_light;
-                left_light.top = cv::Point2f(adding[0].x() * src.cols, adding[0].y() * src.rows);
-                left_light.bottom = cv::Point2f(adding[1].x() * src.cols, adding[1].y() * src.rows);
-                right_light.top = cv::Point2f(adding[3].x() * src.cols, adding[3].y() * src.rows);
-                right_light.bottom = cv::Point2f(adding[2].x() * src.cols, adding[2].y() * src.rows);
+                std::vector<cv::Point2f> points;
+                for (const auto& pt : adding) {
+                    points.push_back(cv::Point2f(pt.x() * src.cols, pt.y() * src.rows));
+                }
 
                 TraditionalDetector detector;
-                struct Armor detectedArmor = detector.detectArmor(src, left_light, right_light);
+                DetectionResult result = detector.detectAndClassify(src, points);
 
-                // 设置颜色
-                box.color_id = detectedArmor.color == Armor::Color::RED ? 1 : 0; // 0是蓝色，1是红色
-
-                // 设置tag_id
-                int detectedNumber = -1;
-                bool isNumber = false;
-
-                if (!detectedArmor.number.empty()) {
-                    try {
-                        detectedNumber = std::stoi(detectedArmor.number);
-                        isNumber = true;
-                    } catch (const std::exception& e) {
-                        // 如果转换失败，isNumber 保持为 false
-                        qDebug() << "Failed to convert number: " << QString::fromStdString(detectedArmor.number);
-                    }
-                }
-
-                if (detectedArmor.number == "outpost") {
-                    box.tag_id = 6;
-                } else if (detectedArmor.number == "base") {
-                    box.tag_id = detectedArmor.type == Armor::Type::SMALL ? 7 : 8;
-                } else if (detectedArmor.number == "guard") {
-                    box.tag_id = 0;
-                } else if (isNumber) {
-                    if (detectedNumber == 1 || detectedNumber == 2) {
-                        box.tag_id = detectedNumber;
-                    } else if (detectedNumber >= 3 && detectedNumber <= 5) {
-                        if (detectedArmor.type == Armor::Type::SMALL) {
-                            box.tag_id = detectedNumber + 1; // 3, 4, 5 -> 4, 5, 6
-                        } else {
-                            box.tag_id = detectedNumber + 6; // 3, 4, 5 -> 9, 10, 11
-                        }
-                    } else {
-                        qDebug() << "Warning: Unrecognized armor number:" << detectedNumber;
-                        box.tag_id = 0; // 设置为默认值（guard）
-                    }
-                } else {
-                    qDebug() << "Warning: Invalid armor number:" << QString::fromStdString(detectedArmor.number);
-                    box.tag_id = 0; // 设置为默认值（guard）
-                }
+                // 设置颜色和tag_id
+                box.color_id = result.color_id;
+                box.tag_id = result.tag_id;
 
                 current_label.append(box);
                 setNormalMode();
                 emit labelChanged(current_label);
 
-                // 输出检测结果到控制台
-                qDebug() << "Detected Armor:";
-                qDebug() << "Number:" << QString::fromStdString(detectedArmor.number);
-                qDebug() << "Confidence:" << detectedArmor.confidence;
-                qDebug() << "Type:" << (detectedArmor.type == Armor::Type::SMALL ? "SMALL" : "LARGE");
-                qDebug() << "Color:" << QString::fromStdString(TraditionalDetector::colorToString(detectedArmor.color));
-                qDebug() << "Assigned tag_id:" << box.tag_id;
+
             }
             update();
             break;
@@ -1139,35 +1095,130 @@ void DrawOnPic::removeBox(QVector<box_t>::iterator box_iter) {
         update();
     }
 }
+// void DrawOnPic::smart() {
+//     // 对当前图片进行一次智能标注。
+//     if (current_file.isEmpty()) return;
+//
+//     lastSmartLabels = current_label;
+//
+//     using namespace std::chrono;
+//     auto t1 = high_resolution_clock::now(); // 统计运行时间
+//     if (!model.run(current_file, current_label)) {
+//         // 运行失败报错
+//         QMessageBox::warning(nullptr, "warning", "Cannot run smart!\n"
+//                                                  "This maybe due to compiling without openvino or a broken model file.\n"
+//                                                  "See warning.txt for detailed information.",
+//                              QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+//         return;
+//     }
+//     auto t2 = high_resolution_clock::now(); // 统计运行时间
+//     latency_ms = duration_cast<milliseconds>(t2 - t1).count();
+//     qDebug("latency=%dms", latency_ms);
+//     // 模型输出的像素坐标变为归一化坐标
+//     for (auto &l: current_label) {
+//         for (auto &pt: l.pts) {
+//             pt.rx() /= img->width();
+//             pt.ry() /= img->height();
+//         }
+//     }
+//     updateBox();
+// }
 void DrawOnPic::smart() {
-    // 对当前图片进行一次智能标注。
     if (current_file.isEmpty()) return;
 
     lastSmartLabels = current_label;
 
     using namespace std::chrono;
-    auto t1 = high_resolution_clock::now(); // 统计运行时间
+    auto t1 = high_resolution_clock::now();
+
     if (!model.run(current_file, current_label)) {
-        // 运行失败报错
         QMessageBox::warning(nullptr, "warning", "Cannot run smart!\n"
                                                  "This maybe due to compiling without openvino or a broken model file.\n"
                                                  "See warning.txt for detailed information.",
                              QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
         return;
     }
-    auto t2 = high_resolution_clock::now(); // 统计运行时间
+
+    auto t2 = high_resolution_clock::now();
     latency_ms = duration_cast<milliseconds>(t2 - t1).count();
     qDebug("latency=%dms", latency_ms);
-    // 模型输出的像素坐标变为归一化坐标
+
+
     for (auto &l: current_label) {
         for (auto &pt: l.pts) {
             pt.rx() /= img->width();
             pt.ry() /= img->height();
         }
     }
+
+    // 使用 TraditionalDetector 进行验证
+    TraditionalDetector detector;
+    cv::Mat src = cv::imread(current_file.toStdString());
+    if (!src.empty()) {
+        for (auto &box : current_label) {
+            std::vector<cv::Point2f> points;
+            for (const auto &pt : box.pts) {
+                points.push_back(cv::Point2f(pt.x() * src.cols, pt.y() * src.rows));
+            }
+
+            DetectionResult result = detector.detectAndClassify(src, points);
+
+            // 如果 TraditionalDetector 能够识别出结果，则使用其结果
+            if (result.confidence > 0.5) {
+                box.color_id = result.color_id;
+
+
+                if (result.number == "outpost") {
+                    box.tag_id = 6;
+                } else if (result.number == "base") {
+                    box.tag_id = result.type == Armor::Type::SMALL ? 7 : 8;
+                } else if (result.number == "guard") {
+                    box.tag_id = 0;
+                } else {
+                    int detectedNumber = -1;
+                    bool isNumber = false;
+                    try {
+                        detectedNumber = std::stoi(result.number);
+                        isNumber = true;
+                    } catch (const std::exception& e) {
+                        qDebug() << "Failed to convert number:" << QString::fromStdString(result.number);
+                    }
+
+                    if (isNumber) {
+                        if (detectedNumber == 1 || detectedNumber == 2) {
+                            box.tag_id = detectedNumber;
+                        } else if (detectedNumber >= 3 && detectedNumber <= 5) {
+                            if (result.type == Armor::Type::SMALL) {
+                                box.tag_id = detectedNumber + 1; // 3, 4, 5 -> 4, 5, 6
+                            } else {
+                                box.tag_id = detectedNumber + 6; // 3, 4, 5 -> 9, 10, 11
+                            }
+                        } else {
+                            qDebug() << "Warning: Unrecognized armor number:" << detectedNumber;
+                            // 保持原有的 tag_id
+                        }
+                    } else {
+                        qDebug() << "Warning: Invalid armor number:" << QString::fromStdString(result.number);
+                        // 保持原有的 tag_id
+                    }
+                }
+
+                qDebug() << "TraditionalDetector result:";
+                qDebug() << "Number:" << QString::fromStdString(result.number);
+                qDebug() << "Confidence:" << result.confidence;
+                qDebug() << "Type:" << (result.type == Armor::Type::SMALL ? "SMALL" : "LARGE");
+                qDebug() << "Color:" << QString::fromStdString(TraditionalDetector::colorToString(result.color));
+                qDebug() << "Assigned tag_id:" << box.tag_id;
+            } else {
+                qDebug() << "TraditionalDetector couldn't confidently classify. Keeping smart() results.";
+            }
+        }
+    } else {
+        qDebug() << "Error: Unable to read image file for TraditionalDetector:" << current_file;
+    }
+
     updateBox();
 }
-
 void DrawOnPic::updateBox() {
     update();
     emit labelChanged(current_label);

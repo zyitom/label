@@ -5,7 +5,7 @@
 #include "Traditional.h"
 #include <fstream>
 #include <iostream>
-
+#include <QString>
 TraditionalDetector::TraditionalDetector() {
     threshold = 0.5;
     model_path_ = "/home/zyi/Desktop/autoaim_ws/install/traditional_detectors/share/traditional_detectors/model/mlp.onnx";
@@ -184,3 +184,71 @@ Armor::Type TraditionalDetector::determineArmorType(const Armor& armor) {
     return Armor::Type::SMALL;  // Default case
 }
 
+DetectionResult TraditionalDetector::detectAndClassify(const cv::Mat& src, const std::vector<cv::Point2f>& points) {
+    if (points.size() < 4) {
+        qDebug() << "Error: Not enough points provided for detection";
+        return DetectionResult{0, 0, "unknown", 0.0f, Armor::Type::SMALL, Armor::Color::UNKNOWN};
+    }
+
+    Light left_light, right_light;
+    left_light.top = points[0];
+    left_light.bottom = points[1];
+    right_light.top = points[3];
+    right_light.bottom = points[2];
+
+    Armor detectedArmor = detectArmor(src, left_light, right_light);
+
+    DetectionResult result;
+    result.color_id = detectedArmor.color == Armor::Color::RED ? 1 : 0;
+    result.number = detectedArmor.number;
+    result.confidence = detectedArmor.confidence;
+    result.type = detectedArmor.type;
+    result.color = detectedArmor.color;
+
+    result.tag_id = assignTagId(detectedArmor);
+
+    // 输出检测结果到控制台
+    qDebug() << "Detected Armor:";
+    qDebug() << "Number:" << QString::fromStdString(result.number);
+    qDebug() << "Confidence:" << result.confidence;
+    qDebug() << "Type:" << (result.type == Armor::Type::SMALL ? "SMALL" : "LARGE");
+    qDebug() << "Color:" << QString::fromStdString(colorToString(result.color));
+    qDebug() << "Assigned tag_id:" << result.tag_id;
+
+    return result;
+}
+
+int TraditionalDetector::assignTagId(const Armor& armor) {
+    int detectedNumber = -1;
+    bool isNumber = false;
+
+    if (!armor.number.empty()) {
+        try {
+            detectedNumber = std::stoi(armor.number);
+            isNumber = true;
+        } catch (const std::exception& e) {
+            qDebug() << "Failed to convert number:" << QString::fromStdString(armor.number);
+        }
+    }
+
+    if (armor.number == "outpost") {
+        return 6;
+    } else if (armor.number == "base") {
+        return armor.type == Armor::Type::SMALL ? 7 : 8;
+    } else if (armor.number == "guard") {
+        return 0;
+    } else if (isNumber) {
+        if (detectedNumber == 1 || detectedNumber == 2) {
+            return detectedNumber;
+        } else if (detectedNumber >= 3 && detectedNumber <= 5) {
+            if (armor.type == Armor::Type::SMALL) {
+                return detectedNumber + 1; // 3, 4, 5 -> 4, 5, 6
+            } else {
+                return detectedNumber + 6; // 3, 4, 5 -> 9, 10, 11
+            }
+        }
+    }
+
+    qDebug() << "Warning: Unrecognized or invalid armor number:" << QString::fromStdString(armor.number);
+    return 0; // 设置为默认值（guard）
+}
