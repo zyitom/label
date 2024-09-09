@@ -1,6 +1,6 @@
 #ifndef DRAWONPIC_H
 #define DRAWONPIC_H
-
+#include "Traditional.h"
 #include <QLabel>
 #include <QImage>
 #include <QPainter>
@@ -10,6 +10,7 @@
 #include "configure.hpp"
 #include <QStack>
 #include <QDateTime>
+
 class LabelDialog;
 #define NULL_IMG cv::Mat(0, 0, CV_8UC1)
 
@@ -183,11 +184,11 @@ private:
     QTransform svg2painter;
     int label_to_size(int label, LabelMode mode) const;
     bool is_big(const box_t& box) const;
-    void performTransformation(const box_t& box);
-    QPointF calculateCenter(const QVector<QPointF>& points);
-    double calculateArea(const QVector<QPointF>& points);
-    QTransform calculateNormalizingTransform(const QVector<QPointF>& points);
-    void saveTransformedImage(const QImage& originalImage, const QVector<QPointF>& points, const QString& filename);
+    // void performTransformation(const box_t& box);
+    // QPointF calculateCenter(const QVector<QPointF>& points);
+    // double calculateArea(const QVector<QPointF>& points);
+    // QTransform calculateNormalizingTransform(const QVector<QPointF>& points);
+    // void saveTransformedImage(const QImage& originalImage, const QVector<QPointF>& points, const QString& filename);
 };
 
 #endif // DRAWONPIC_H

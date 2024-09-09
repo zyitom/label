@@ -17,6 +17,7 @@
 #include "mainwindow.h"
 #include "labeldialog.h"
 #include <QtMath>
+#include "Traditional.h"
 DrawOnPic::DrawOnPic(QWidget *parent) : QLabel(parent), model() {
     pen_point_focus.setWidth(5);
     pen_point_focus.setColor(Qt::green);
@@ -258,214 +259,214 @@ void DrawOnPic::mouseMoveEvent(QMouseEvent *event) {
         }
     }
 }
-void DrawOnPic::performTransformation(const box_t& box) {
-    // Calculate the bounding rectangle for the label points
-    QPolygonF labelPolygon;
-    for (int i = 0; i < 4; ++i) {
-        labelPolygon.append(norm2img.map(box.pts[i]));
-    }
-    QRect boundingRect = labelPolygon.boundingRect().toRect();
+// void DrawOnPic::performTransformation(const box_t& box) {
+//     // Calculate the bounding rectangle for the label points
+//     QPolygonF labelPolygon;
+//     for (int i = 0; i < 4; ++i) {
+//         labelPolygon.append(norm2img.map(box.pts[i]));
+//     }
+//     QRect boundingRect = labelPolygon.boundingRect().toRect();
 
-    // Add some margin to the bounding rectangle
-    int margin = 10;
-    boundingRect.adjust(-margin, -margin, margin, margin);
-    boundingRect = boundingRect.intersected(img->rect());
+//     // Add some margin to the bounding rectangle
+//     int margin = 10;
+//     boundingRect.adjust(-margin, -margin, margin, margin);
+//     boundingRect = boundingRect.intersected(img->rect());
 
-    // Crop the original image
-    QImage croppedImage = img->copy(boundingRect);
+//     // Crop the original image
+//     QImage croppedImage = img->copy(boundingRect);
 
-    // Calculate the transformation from SVG to the cropped image
-    QPolygonF svgPolygon = is_big(box) ? big_pts : small_pts;
-    QPolygonF croppedPolygon;
-    for (int i = 0; i < 4; ++i) {
-        croppedPolygon.append(norm2img.map(box.pts[i]) - boundingRect.topLeft());
-    }
+//     // Calculate the transformation from SVG to the cropped image
+//     QPolygonF svgPolygon = is_big(box) ? big_pts : small_pts;
+//     QPolygonF croppedPolygon;
+//     for (int i = 0; i < 4; ++i) {
+//         croppedPolygon.append(norm2img.map(box.pts[i]) - boundingRect.topLeft());
+//     }
 
-    QTransform transform;
-    QTransform::quadToQuad(svgPolygon, croppedPolygon, transform);
+//     QTransform transform;
+//     QTransform::quadToQuad(svgPolygon, croppedPolygon, transform);
 
-    // Create and save the cropped image
-    QString croppedFilename = QString("cropped_%1.png").arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
-    croppedImage.save(croppedFilename);
+//     // Create and save the cropped image
+//     QString croppedFilename = QString("cropped_%1.png").arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
+//     croppedImage.save(croppedFilename);
 
-    // Create the final transformed image
-    QImage transformedImage(croppedImage.size(), QImage::Format_ARGB32_Premultiplied);
-    transformedImage.fill(Qt::transparent);
+//     // Create the final transformed image
+//     QImage transformedImage(croppedImage.size(), QImage::Format_ARGB32_Premultiplied);
+//     transformedImage.fill(Qt::transparent);
 
-    QPainter painter(&transformedImage);
-    painter.setRenderHint(QPainter::Antialiasing);
-    painter.setTransform(transform);
-    standard_tag_render[box.tag_id].render(&painter);
+//     QPainter painter(&transformedImage);
+//     painter.setRenderHint(QPainter::Antialiasing);
+//     painter.setTransform(transform);
+//     standard_tag_render[box.tag_id].render(&painter);
 
-    // Save the final transformed image
-    QString transformedFilename = QString("transformed_%1.png").arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
-    transformedImage.save(transformedFilename);
+//     // Save the final transformed image
+//     QString transformedFilename = QString("transformed_%1.png").arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
+//     transformedImage.save(transformedFilename);
 
-    // Calculate and save the coordinates of the original points in both cropped and transformed images
-    QFile file(transformedFilename + ".txt");
-    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream stream(&file);
-        stream << "Crop rect: " << boundingRect.x() << " " << boundingRect.y() << " "
-               << boundingRect.width() << " " << boundingRect.height() << "\n";
-        stream << "Points in cropped image:\n";
-        for (int i = 0; i < 4; ++i) {
-            QPointF croppedPoint = norm2img.map(box.pts[i]) - boundingRect.topLeft();
-            stream << croppedPoint.x() << " " << croppedPoint.y() << "\n";
-        }
-        stream << "Points in transformed image:\n";
-        for (int i = 0; i < 4; ++i) {
-            QPointF croppedPoint = norm2img.map(box.pts[i]) - boundingRect.topLeft();
-            QPointF transformedPoint = transform.map(croppedPoint);
-            stream << transformedPoint.x() << " " << transformedPoint.y() << "\n";
-        }
-    }
+//     // Calculate and save the coordinates of the original points in both cropped and transformed images
+//     QFile file(transformedFilename + ".txt");
+//     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+//         QTextStream stream(&file);
+//         stream << "Crop rect: " << boundingRect.x() << " " << boundingRect.y() << " "
+//                << boundingRect.width() << " " << boundingRect.height() << "\n";
+//         stream << "Points in cropped image:\n";
+//         for (int i = 0; i < 4; ++i) {
+//             QPointF croppedPoint = norm2img.map(box.pts[i]) - boundingRect.topLeft();
+//             stream << croppedPoint.x() << " " << croppedPoint.y() << "\n";
+//         }
+//         stream << "Points in transformed image:\n";
+//         for (int i = 0; i < 4; ++i) {
+//             QPointF croppedPoint = norm2img.map(box.pts[i]) - boundingRect.topLeft();
+//             QPointF transformedPoint = transform.map(croppedPoint);
+//             stream << transformedPoint.x() << " " << transformedPoint.y() << "\n";
+//         }
+//     }
 
-    // Print the coordinates to console for debugging
-    qDebug() << "Crop rect:" << boundingRect;
-    qDebug() << "Points in cropped image:";
-    for (int i = 0; i < 4; ++i) {
-        QPointF croppedPoint = norm2img.map(box.pts[i]) - boundingRect.topLeft();
-        qDebug() << "Point" << i << ":" << croppedPoint;
-    }
-    qDebug() << "Points in transformed image:";
-    for (int i = 0; i < 4; ++i) {
-        QPointF croppedPoint = norm2img.map(box.pts[i]) - boundingRect.topLeft();
-        QPointF transformedPoint = transform.map(croppedPoint);
-        qDebug() << "Point" << i << ":" << transformedPoint;
-    }
-}
-QPointF DrawOnPic::calculateCenter(const QVector<QPointF>& points) {
-    QPointF center(0, 0);
-    for (const auto& point : points) {
-        center += point;
-    }
-    return center / points.size();
-}
+//     // Print the coordinates to console for debugging
+//     qDebug() << "Crop rect:" << boundingRect;
+//     qDebug() << "Points in cropped image:";
+//     for (int i = 0; i < 4; ++i) {
+//         QPointF croppedPoint = norm2img.map(box.pts[i]) - boundingRect.topLeft();
+//         qDebug() << "Point" << i << ":" << croppedPoint;
+//     }
+//     qDebug() << "Points in transformed image:";
+//     for (int i = 0; i < 4; ++i) {
+//         QPointF croppedPoint = norm2img.map(box.pts[i]) - boundingRect.topLeft();
+//         QPointF transformedPoint = transform.map(croppedPoint);
+//         qDebug() << "Point" << i << ":" << transformedPoint;
+//     }
+// }
+// QPointF DrawOnPic::calculateCenter(const QVector<QPointF>& points) {
+//     QPointF center(0, 0);
+//     for (const auto& point : points) {
+//         center += point;
+//     }
+//     return center / points.size();
+// }
 
-double DrawOnPic::calculateArea(const QVector<QPointF>& points) {
-    double area = 0.0;
-    for (int i = 0; i < points.size(); i++) {
-        int j = (i + 1) % points.size();
-        area += (points[i].x() * points[j].y() - points[j].x() * points[i].y());
-    }
-    return qAbs(area) / 2.0;
-}
+// double DrawOnPic::calculateArea(const QVector<QPointF>& points) {
+//     double area = 0.0;
+//     for (int i = 0; i < points.size(); i++) {
+//         int j = (i + 1) % points.size();
+//         area += (points[i].x() * points[j].y() - points[j].x() * points[i].y());
+//     }
+//     return qAbs(area) / 2.0;
+// }
 
-QTransform DrawOnPic::calculateNormalizingTransform(const QVector<QPointF>& points) {
-    // 确保我们有四个点
-    if (points.size() != 4) {
-        qDebug() << "Error: Expecting 4 points, got" << points.size();
-        return QTransform();
-    }
+// QTransform DrawOnPic::calculateNormalizingTransform(const QVector<QPointF>& points) {
+//     // 确保我们有四个点
+//     if (points.size() != 4) {
+//         qDebug() << "Error: Expecting 4 points, got" << points.size();
+//         return QTransform();
+//     }
 
-    // 找出左上角点（x和y坐标之和最小的点）
-    int topLeftIndex = 0;
-    double minSum = points[0].x() + points[0].y();
-    for (int i = 1; i < 4; ++i) {
-        double sum = points[i].x() + points[i].y();
-        if (sum < minSum) {
-            minSum = sum;
-            topLeftIndex = i;
-        }
-    }
+//     // 找出左上角点（x和y坐标之和最小的点）
+//     int topLeftIndex = 0;
+//     double minSum = points[0].x() + points[0].y();
+//     for (int i = 1; i < 4; ++i) {
+//         double sum = points[i].x() + points[i].y();
+//         if (sum < minSum) {
+//             minSum = sum;
+//             topLeftIndex = i;
+//         }
+//     }
 
-    // 重新排序点，使左上角点为第一个
-    QVector<QPointF> orderedPoints;
-    for (int i = 0; i < 4; ++i) {
-        orderedPoints.append(points[(topLeftIndex + i) % 4]);
-    }
+//     // 重新排序点，使左上角点为第一个
+//     QVector<QPointF> orderedPoints;
+//     for (int i = 0; i < 4; ++i) {
+//         orderedPoints.append(points[(topLeftIndex + i) % 4]);
+//     }
 
-    QPointF topLeft = orderedPoints[0];
-    QPointF topRight = orderedPoints[1];
-    QPointF bottomRight = orderedPoints[2];
-    QPointF bottomLeft = orderedPoints[3];
+//     QPointF topLeft = orderedPoints[0];
+//     QPointF topRight = orderedPoints[1];
+//     QPointF bottomRight = orderedPoints[2];
+//     QPointF bottomLeft = orderedPoints[3];
 
-    // 计算新的宽度和高度
-    double width = qMax(QLineF(topLeft, topRight).length(), QLineF(bottomLeft, bottomRight).length());
-    double height = qMax(QLineF(topLeft, bottomLeft).length(), QLineF(topRight, bottomRight).length());
+//     // 计算新的宽度和高度
+//     double width = qMax(QLineF(topLeft, topRight).length(), QLineF(bottomLeft, bottomRight).length());
+//     double height = qMax(QLineF(topLeft, bottomLeft).length(), QLineF(topRight, bottomRight).length());
 
-    // 创建源多边形和目标多边形
-    QPolygonF src;
-    src << topLeft << topRight << bottomRight << bottomLeft;
+//     // 创建源多边形和目标多边形
+//     QPolygonF src;
+//     src << topLeft << topRight << bottomRight << bottomLeft;
 
-    QPolygonF dst;
-    dst << QPointF(0, 0) << QPointF(width, 0) << QPointF(width, height) << QPointF(0, height);
+//     QPolygonF dst;
+//     dst << QPointF(0, 0) << QPointF(width, 0) << QPointF(width, height) << QPointF(0, height);
 
-    // 计算变换
-    QTransform transform;
-    QTransform::quadToQuad(src, dst, transform);
+//     // 计算变换
+//     QTransform transform;
+//     QTransform::quadToQuad(src, dst, transform);
 
-    qDebug() << "Normalizing transform:";
-    qDebug() << transform;
+//     qDebug() << "Normalizing transform:";
+//     qDebug() << transform;
 
-    return transform;
-}
+//     return transform;
+// }
 
-void DrawOnPic::saveTransformedImage(const QImage& originalImage, const QVector<QPointF>& normalizedPoints, const QString& filename) {
-    // 将归一化坐标转换为像素坐标
-    QVector<QPointF> pixelPoints;
-    for (const auto& point : normalizedPoints) {
-        pixelPoints.append(QPointF(point.x() * originalImage.width(), point.y() * originalImage.height()));
-    }
+// void DrawOnPic::saveTransformedImage(const QImage& originalImage, const QVector<QPointF>& normalizedPoints, const QString& filename) {
+//     // 将归一化坐标转换为像素坐标
+//     QVector<QPointF> pixelPoints;
+//     for (const auto& point : normalizedPoints) {
+//         pixelPoints.append(QPointF(point.x() * originalImage.width(), point.y() * originalImage.height()));
+//     }
 
-    // 计算包围所有点的矩形
-    qreal minX = std::numeric_limits<qreal>::max();
-    qreal minY = std::numeric_limits<qreal>::max();
-    qreal maxX = std::numeric_limits<qreal>::lowest();
-    qreal maxY = std::numeric_limits<qreal>::lowest();
+//     // 计算包围所有点的矩形
+//     qreal minX = std::numeric_limits<qreal>::max();
+//     qreal minY = std::numeric_limits<qreal>::max();
+//     qreal maxX = std::numeric_limits<qreal>::lowest();
+//     qreal maxY = std::numeric_limits<qreal>::lowest();
 
-    for (const auto& point : pixelPoints) {
-        minX = qMin(minX, point.x());
-        minY = qMin(minY, point.y());
-        maxX = qMax(maxX, point.x());
-        maxY = qMax(maxY, point.y());
-    }
+//     for (const auto& point : pixelPoints) {
+//         minX = qMin(minX, point.x());
+//         minY = qMin(minY, point.y());
+//         maxX = qMax(maxX, point.x());
+//         maxY = qMax(maxY, point.y());
+//     }
 
-    // 扩大矩形以包含所有点（添加一些边距）
-    int margin = 10; // 可以根据需要调整
-    QRect cropRect(QPoint(qFloor(minX) - margin, qFloor(minY) - margin),
-                   QPoint(qCeil(maxX) + margin, qCeil(maxY) + margin));
+//     // 扩大矩形以包含所有点（添加一些边距）
+//     int margin = 10; // 可以根据需要调整
+//     QRect cropRect(QPoint(qFloor(minX) - margin, qFloor(minY) - margin),
+//                    QPoint(qCeil(maxX) + margin, qCeil(maxY) + margin));
 
-    // 确保cropRect在原图范围内
-    cropRect = cropRect.intersected(originalImage.rect());
+//     // 确保cropRect在原图范围内
+//     cropRect = cropRect.intersected(originalImage.rect());
 
-    // 裁剪原图
-    QImage croppedImage = originalImage.copy(cropRect);
+//     // 裁剪原图
+//     QImage croppedImage = originalImage.copy(cropRect);
 
-    // 计算裁剪后的点坐标
-    QVector<QPointF> croppedPoints;
-    for (const auto& point : pixelPoints) {
-        croppedPoints.append(point - cropRect.topLeft());
-    }
+//     // 计算裁剪后的点坐标
+//     QVector<QPointF> croppedPoints;
+//     for (const auto& point : pixelPoints) {
+//         croppedPoints.append(point - cropRect.topLeft());
+//     }
 
-    // 保存裁剪后的图像
-    croppedImage.save(filename);
+//     // 保存裁剪后的图像
+//     croppedImage.save(filename);
 
-    // 保存原始点在裁剪图像中的坐标
-    QFile coordFile(filename + "_coordinates.txt");
-    if (coordFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream stream(&coordFile);
-        for (const auto& point : croppedPoints) {
-            stream << qRound(point.x()) << " " << qRound(point.y()) << "\n";
-        }
-    }
+//     // 保存原始点在裁剪图像中的坐标
+//     QFile coordFile(filename + "_coordinates.txt");
+//     if (coordFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+//         QTextStream stream(&coordFile);
+//         for (const auto& point : croppedPoints) {
+//             stream << qRound(point.x()) << " " << qRound(point.y()) << "\n";
+//         }
+//     }
 
 
-    qDebug() << "Original normalized points:";
-    for (const auto& point : normalizedPoints) {
-        qDebug() << point;
-    }
-    qDebug() << "Pixel points in original image:";
-    for (const auto& point : pixelPoints) {
-        qDebug() << point;
-    }
-    qDebug() << "Points in cropped image:";
-    for (const auto& point : croppedPoints) {
-        qDebug() << point;
-    }
-    qDebug() << "Crop rect:" << cropRect;
-    qDebug() << "Cropped image size:" << croppedImage.width() << "x" << croppedImage.height();
-}
+//     qDebug() << "Original normalized points:";
+//     for (const auto& point : normalizedPoints) {
+//         qDebug() << point;
+//     }
+//     qDebug() << "Pixel points in original image:";
+//     for (const auto& point : pixelPoints) {
+//         qDebug() << point;
+//     }
+//     qDebug() << "Points in cropped image:";
+//     for (const auto& point : croppedPoints) {
+//         qDebug() << point;
+//     }
+//     qDebug() << "Crop rect:" << cropRect;
+//     qDebug() << "Cropped image size:" << croppedImage.width() << "x" << croppedImage.height();
+// }
 int DrawOnPic::label_to_size(int label, LabelMode mode) const  // Add 'const' here
 {
     if(mode == Armor)
@@ -492,31 +493,47 @@ void DrawOnPic::mouseReleaseEvent(QMouseEvent *event) {
                 box_t box;
                 for (int i = 0; i < 4 + (label_mode == Wind); ++i) box.pts[i] = adding[i];
 
-                // 计算并保存面积
-                double area = calculateArea(adding);
-
-                // 计算中心点
-                QPointF center = calculateCenter(adding);
-
-                // 保存原始坐标和面积
-                QString coordFilename = QString("original_coordinates_%1.txt").arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
-                QFile coordFile(coordFilename);
-                if (coordFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-                    QTextStream stream(&coordFile);
-                    stream << "Original Coordinates:\n";
-                    for (const auto& point : adding) {
-                        stream << point.x() << " " << point.y() << "\n";
-                    }
-                    stream << "Area: " << area << "\n";
-                    stream << "Center: " << center.x() << " " << center.y() << "\n";
+                // 使用 TraditionalDetector 检测装甲板
+                cv::Mat src = cv::imread(current_file.toStdString());
+                if (src.empty()) {
+                    qDebug() << "Error: Unable to read image file: " << current_file;
+                    break;
                 }
 
-                // 保存变换后的图像和坐标
-                QString imageFilename = QString("transformed_%1.png").arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
-                saveTransformedImage(*img, adding, imageFilename);
+                Light left_light, right_light;
+                left_light.top = cv::Point2f(adding[0].x() * src.cols, adding[0].y() * src.rows);
+                left_light.bottom = cv::Point2f(adding[1].x() * src.cols, adding[1].y() * src.rows);
+                right_light.top = cv::Point2f(adding[3].x() * src.cols, adding[3].y() * src.rows);
+                right_light.bottom = cv::Point2f(adding[2].x() * src.cols, adding[2].y() * src.rows);
+
+                TraditionalDetector detector;
+                struct Armor detectedArmor = detector.detectArmor(src, left_light, right_light);
+
+                // 输出检测结果到控制台
+                std::cout << "Detected Armor:" << std::endl;
+                std::cout << "Number: " << detectedArmor.number << std::endl;
+                std::cout << "Confidence: " << detectedArmor.confidence << std::endl;
+                std::cout << "Type: " << (detectedArmor.type == Armor::Type::SMALL ? "SMALL" : "LARGE") << std::endl;
+                std::cout << "Color: " << TraditionalDetector::colorToString(detectedArmor.color) << std::endl;
+
+                // 保存检测结果到文件
+                QString resultFilename = QString("detection_result_%1.txt").arg(QDateTime::currentDateTime().toString("yyyyMMddhhmmss"));
+                QFile resultFile(resultFilename);
+                if (resultFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                    QTextStream stream(&resultFile);
+                    stream << "Detected Armor:\n";
+                    stream << "Number: " << QString::fromStdString(detectedArmor.number) << "\n";
+                    stream << "Confidence: " << detectedArmor.confidence << "\n";
+                    stream << "Type: " << (detectedArmor.type == Armor::Type::SMALL ? "SMALL" : "LARGE") << "\n";
+                    stream << "Color: " << QString::fromStdString(TraditionalDetector::colorToString(detectedArmor.color)) << "\n";
+                    resultFile.close();
+                }
+
+                // 保存提取的数字图像
+                QString numberImageFilename = QString("number_image_%1.jpg").arg(QDateTime::currentDateTime().toString("yyyyMMddhhmmss"));
+                cv::imwrite(numberImageFilename.toStdString(), detectedArmor.number_img);
 
                 current_label.append(box);
-                performTransformation(current_label.last());
                 setNormalMode();
                 emit labelChanged(current_label);
             }
