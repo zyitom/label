@@ -509,33 +509,58 @@ void DrawOnPic::mouseReleaseEvent(QMouseEvent *event) {
                 TraditionalDetector detector;
                 struct Armor detectedArmor = detector.detectArmor(src, left_light, right_light);
 
-                // 输出检测结果到控制台
-                std::cout << "Detected Armor:" << std::endl;
-                std::cout << "Number: " << detectedArmor.number << std::endl;
-                std::cout << "Confidence: " << detectedArmor.confidence << std::endl;
-                std::cout << "Type: " << (detectedArmor.type == Armor::Type::SMALL ? "SMALL" : "LARGE") << std::endl;
-                std::cout << "Color: " << TraditionalDetector::colorToString(detectedArmor.color) << std::endl;
+                // 设置颜色
+                box.color_id = detectedArmor.color == Armor::Color::RED ? 1 : 0; // 0是蓝色，1是红色
 
-                // 保存检测结果到文件
-                QString resultFilename = QString("detection_result_%1.txt").arg(QDateTime::currentDateTime().toString("yyyyMMddhhmmss"));
-                QFile resultFile(resultFilename);
-                if (resultFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-                    QTextStream stream(&resultFile);
-                    stream << "Detected Armor:\n";
-                    stream << "Number: " << QString::fromStdString(detectedArmor.number) << "\n";
-                    stream << "Confidence: " << detectedArmor.confidence << "\n";
-                    stream << "Type: " << (detectedArmor.type == Armor::Type::SMALL ? "SMALL" : "LARGE") << "\n";
-                    stream << "Color: " << QString::fromStdString(TraditionalDetector::colorToString(detectedArmor.color)) << "\n";
-                    resultFile.close();
+                // 设置tag_id
+                int detectedNumber = -1;
+                bool isNumber = false;
+
+                if (!detectedArmor.number.empty()) {
+                    try {
+                        detectedNumber = std::stoi(detectedArmor.number);
+                        isNumber = true;
+                    } catch (const std::exception& e) {
+                        // 如果转换失败，isNumber 保持为 false
+                        qDebug() << "Failed to convert number: " << QString::fromStdString(detectedArmor.number);
+                    }
                 }
 
-                // 保存提取的数字图像
-                QString numberImageFilename = QString("number_image_%1.jpg").arg(QDateTime::currentDateTime().toString("yyyyMMddhhmmss"));
-                cv::imwrite(numberImageFilename.toStdString(), detectedArmor.number_img);
+                if (detectedArmor.number == "outpost") {
+                    box.tag_id = 6;
+                } else if (detectedArmor.number == "base") {
+                    box.tag_id = detectedArmor.type == Armor::Type::SMALL ? 7 : 8;
+                } else if (detectedArmor.number == "guard") {
+                    box.tag_id = 0;
+                } else if (isNumber) {
+                    if (detectedNumber == 1 || detectedNumber == 2) {
+                        box.tag_id = detectedNumber;
+                    } else if (detectedNumber >= 3 && detectedNumber <= 5) {
+                        if (detectedArmor.type == Armor::Type::SMALL) {
+                            box.tag_id = detectedNumber + 1; // 3, 4, 5 -> 4, 5, 6
+                        } else {
+                            box.tag_id = detectedNumber + 6; // 3, 4, 5 -> 9, 10, 11
+                        }
+                    } else {
+                        qDebug() << "Warning: Unrecognized armor number:" << detectedNumber;
+                        box.tag_id = 0; // 设置为默认值（guard）
+                    }
+                } else {
+                    qDebug() << "Warning: Invalid armor number:" << QString::fromStdString(detectedArmor.number);
+                    box.tag_id = 0; // 设置为默认值（guard）
+                }
 
                 current_label.append(box);
                 setNormalMode();
                 emit labelChanged(current_label);
+
+                // 输出检测结果到控制台
+                qDebug() << "Detected Armor:";
+                qDebug() << "Number:" << QString::fromStdString(detectedArmor.number);
+                qDebug() << "Confidence:" << detectedArmor.confidence;
+                qDebug() << "Type:" << (detectedArmor.type == Armor::Type::SMALL ? "SMALL" : "LARGE");
+                qDebug() << "Color:" << QString::fromStdString(TraditionalDetector::colorToString(detectedArmor.color));
+                qDebug() << "Assigned tag_id:" << box.tag_id;
             }
             update();
             break;
