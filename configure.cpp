@@ -15,7 +15,7 @@ Configure::Configure()
             QString version;
             stream >> version;
             if(version == VERSION)
-                stream >> point_distance >> V_rate >> last_open >> last_pic >> last_mode >> auto_enhance_V;
+                stream >> point_distance >> V_rate >> last_open >> last_pic >> last_mode >> auto_enhance_V >> last_model_name >> last_model_type;
         }
     }
 }
@@ -25,6 +25,6 @@ Configure::~Configure()
     QFile fp("configure.txt");
     if (fp.open(QFile::WriteOnly | QFile::Text | QFile::Truncate)) {
         QTextStream stream(&fp);
-        stream << VERSION << '\n' << point_distance << '\n' << V_rate << '\n' << last_open << '\n' << last_pic << '\n' << last_mode << '\n' << auto_enhance_V;
+        stream << VERSION << '\n' << point_distance << '\n' << V_rate << '\n' << last_open << '\n' << last_pic << '\n' << last_mode << '\n' << auto_enhance_V << '\n' << last_model_name << '\n' << last_model_type;
     }
 }

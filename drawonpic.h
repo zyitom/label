@@ -21,7 +21,10 @@ enum LabelMode{
     Engineer
 
 };
-
+enum ModelMode {
+    Yolov5,
+    Yolox,
+};
 class DrawOnPic : public QLabel {
 Q_OBJECT
 

@@ -18,7 +18,9 @@ class MainWindow : public QMainWindow {
 Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0, std::string path="", int init_mode=0);
+    //explicit MainWindow(QWidget *parent = 0, std::string path="", int init_mode=0);
+
+    explicit MainWindow(QWidget *parent = nullptr, std::string path = "", int init_mode = 0);
 
     ~MainWindow();
 
@@ -58,6 +60,9 @@ private slots:
     void on_autoEnhanceVCheckBox_stateChanged(int check);
 
     void on_selectModelPushButton_clicked();
+
+    void on_modelTypeComboBox_currentIndexChanged(int index);
+
 private:
     int lastEditedLabelIndex; // 记录最后编辑的标签索引
 
@@ -66,6 +71,9 @@ private:
     LabelDialog *dialog = nullptr;
 
     Configuredialog *cdialog = nullptr;
+
+    QLabel *labelModelName;
+
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
 };

@@ -238,6 +238,12 @@
         </spacer>
        </item>
        <item>
+        <widget class="QLabel" name="labelModelName">
+         <property name="text">
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QLabel" name="labelOpenvino">
          <property name="text">
           <string>openvino: </string>

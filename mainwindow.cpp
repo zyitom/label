@@ -31,7 +31,7 @@ MainWindow::MainWindow(QWidget *parent, std::string path, int init_mode) :
     QObject::connect(ui->coverBrushButton, &QPushButton::clicked, ui->label, &DrawOnPic::cover_brush);
     QObject::connect(ui->label, &DrawOnPic::update_list_name_signal, [=](){update_list_name(ui->label->label_mode);});
     QObject::connect(ui->configurePushButton, &QPushButton::clicked, [=](){cdialog->show_configure();});
-    QObject::connect(ui->selectModelPushButton, &QPushButton::clicked, this, &MainWindow::on_selectModelPushButton_clicked);
+    //QObject::connect(ui->modelTypeComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::on_modelTypeComboBox_currentIndexChanged);
     QObject::connect(ui->label, &DrawOnPic::delCurrentImage, [=]() {
         ui->label->enh_img = NULL_IMG;
         ui->label->modified_img = NULL_IMG;
@@ -41,12 +41,14 @@ MainWindow::MainWindow(QWidget *parent, std::string path, int init_mode) :
         for (int i = currentRow + 1; i < count; i++) {
             auto current = static_cast<IndexQListWidgetItem *>(ui->fileListWidget->item(i));
             current->setIndex(current->getIndex()-1);
-        } 
+        }
         ui->fileListWidget->removeItemWidget(ui->fileListWidget->takeItem(currentRow));
         ui->fileListHorizontalSlider->setMaximum(ui->fileListWidget->count());
     });
     ui->label->label_mode = LabelMode(ui->label->configure.last_mode);
     ui->labelOpenvino->setText(ui->label->model_mode()); // 获取当前模型模式，并显示在窗口左下角
+    labelModelName = ui->labelModelName;
+    labelModelName->setText(ui->label->configure.last_model_name);
     ui->autoSaveCheckBox->setCheckState(Qt::Checked);
     ui->modeComboBox->setCurrentIndex(init_mode);
     ui->autoEnhanceVCheckBox->setCheckState(ui->label->configure.auto_enhance_V ? Qt::Checked : Qt::Unchecked);
@@ -158,27 +160,43 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
     return QMainWindow::eventFilter(obj, event);
 }
 
-void MainWindow::on_selectModelPushButton_clicked()
-{   static int callCount = 0;
+
+void MainWindow::on_modelTypeComboBox_currentIndexChanged(int index) {
+    switch (index) {
+        case 0:
+            ui->label->configure.last_model_name = "model-opt.onnx";
+        break;
+        case 1:
+            ui->label->configure.last_model_name = "another-model.onnx";
+        break;
+        // Add more model names as needed
+        default:
+            ui->label->configure.last_model_name = "default-model.onnx";
+        break;
+    }
+    ui->label->configure.model_path = "../resources/" + ui->label->configure.last_model_name;
+    ui->label->configure.last_model_type = index;
+    qDebug() << "Model path changed to:" << ui->label->configure.model_path;
+
+    // Update the model name label
+    labelModelName->setText(ui->label->configure.last_model_name);
+}
+
+void MainWindow::on_selectModelPushButton_clicked() {
+    static int callCount = 0;
     qDebug() << "Function called " << ++callCount << " times";
     QString fileName = QFileDialog::getOpenFileName(this,
         tr("Select ONNX Model"), "",
         tr("ONNX Models (*.onnx);;All Files (*)"));
-    if (!fileName.isEmpty())
-    {
-        // TODO: Handle the selected ONNX model file
-        // For example, you might want to store the file path or load the model
+    if (!fileName.isEmpty()) {
         qDebug() << "Selected ONNX model:" << fileName;
+        ui->label->configure.model_path = fileName;
+        ui->label->configure.last_model_name = QFileInfo(fileName).fileName();
 
-        // Optionally, update the UI to show the selected model
-        // For example, if you have a QLabel to display the selected model:
-        // ui->modelNameLabel->setText(QFileInfo(fileName).fileName());
-
-        // You might also want to call a function to load the model
-        // loadOnnxModel(fileName);
+        // Update the model name label
+        labelModelName->setText(ui->label->configure.last_model_name);
     }
 }
-
 void MainWindow::onLabelDialogFinished(int result) {
     if (result == QDialog::Accepted) {
         QTimer::singleShot(0, this, [this]() {
