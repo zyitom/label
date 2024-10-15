@@ -30,7 +30,6 @@ MainWindow::MainWindow(QWidget *parent, std::string path, int init_mode) :
     QObject::connect(ui->coverBrushButton, &QPushButton::clicked, ui->label, &DrawOnPic::cover_brush);
     QObject::connect(ui->label, &DrawOnPic::update_list_name_signal, [=](){update_list_name(ui->label->label_mode);});
     QObject::connect(ui->configurePushButton, &QPushButton::clicked, [=](){cdialog->show_configure();});
-    //QObject::connect(ui->modelTypeComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::on_modelTypeComboBox_currentIndexChanged);
     QObject::connect(ui->label, &DrawOnPic::delCurrentImage, [=]() {
         ui->label->enh_img = NULL_IMG;
         ui->label->modified_img = NULL_IMG;
@@ -45,10 +44,8 @@ MainWindow::MainWindow(QWidget *parent, std::string path, int init_mode) :
         ui->fileListHorizontalSlider->setMaximum(ui->fileListWidget->count());
     });
     ui->label->label_mode = LabelMode(ui->label->configure.last_mode);
-    //ui->labelOpenvino->setText(ui->label->model_mode()); // 获取当前模型模式，并显示在窗口左下角
     labelModelName = ui->labelModelName;
-    //labelModelName->setText(getModelFileName(ui->label->configure.last_model_name));
-    ui->autoSaveCheckBox->setCheckState(Qt::Checked);
+    ui->autoSaveCheckBox->setCheckState(Qt::Checked);  
     ui->modeComboBox->setCurrentIndex(ui->label->configure.last_mode);
     ui->modelTypeComboBox->setCurrentIndex(ui->label->configure.last_model_type);
     ui->autoEnhanceVCheckBox->setCheckState(ui->label->configure.auto_enhance_V ? Qt::Checked : Qt::Unchecked);

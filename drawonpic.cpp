@@ -564,19 +564,22 @@ void DrawOnPic::verifyBoxes() {
                     qDebug() << "Failed to convert number:" << QString::fromStdString(result.number);
                 }
 
-                if (isNumber) {
-                    if (detectedNumber == 1 || detectedNumber == 2) {
-                        box.tag_id = detectedNumber;
-                    } else if (detectedNumber >= 3 && detectedNumber <= 5) {
-                        if (result.type == Armor::Type::SMALL) {
-                            box.tag_id = detectedNumber + 1; // 3, 4, 5 -> 4, 5, 6
-                        } else {
-                            box.tag_id = detectedNumber + 6; // 3, 4, 5 -> 9, 10, 11
-                        }
-                    } else {
-                        qDebug() << "Warning: Unrecognized armor number:" << detectedNumber;
+                // if (isNumber) {
+                //     if (detectedNumber == 1 || detectedNumber == 2) {
+                //         box.tag_id = detectedNumber;
+                //     } else if (detectedNumber >= 3 && detectedNumber <= 5) {
+                //         if (result.type == Armor::Type::SMALL) {
+                //             box.tag_id = detectedNumber + 1; // 3, 4, 5 -> 4, 5, 6
+                //         } else {
+                //             box.tag_id = detectedNumber + 6; // 3, 4, 5 -> 9, 10, 11
+                //         }
+                //     } else {
+                //         qDebug() << "Warning: Unrecognized armor number:" << detectedNumber;
 
-                    }
+                //     }
+                if (isNumber) {
+                     box.tag_id = detectedNumber;
+
                 } else {
                     qDebug() << "Warning: Invalid armor number:" << QString::fromStdString(result.number);
 
@@ -779,17 +782,18 @@ void DrawOnPic::keyPressEvent(QKeyEvent *event) {
         //         mime_data->setData("box_t", box_data);
         //         QApplication::clipboard()->setMimeData(mime_data);
         //     }
+
+#pragma endregion
         case Qt::Key_V:
                     if (mode != VERIFY_MODE) {
                         mode = VERIFY_MODE;
                         verifyBoxes();
+                        mode = NORMAL_MODE;
                     } else {
                         mode = NORMAL_MODE;
                     }
         update();
         break;
-#pragma endregion
-
 #pragma region 切换移动模式
         case Qt::Key_G: // 锚点平行模式
             if (focus_box_index != -1) {

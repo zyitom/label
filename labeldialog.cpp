@@ -3,7 +3,7 @@
 #include <iostream>
 #include <QObject>
 #include <QDebug>
-
+#include <QShortcut>
 int last_tag_id = 0, last_color_id = 0;
 static const QString Armor_names[] = {"Sentry", "Hero", "Engineer", "3-Infantry", "4-Infantry", "5-Infantry", "Outpost", "Base-small", "Base-big", "3-Balance", "4-Balance", "5-Balance"};
 static const QString Engineer_names[] = {"R-tag", "Top", "Bottom", "Entrance", "Arrow"};
@@ -18,9 +18,19 @@ LabelDialog::LabelDialog(QVector<box_t>::iterator box_iter, const LabelMode mode
     setup_boxes(mode);
     ui->class_box->setCurrentIndex(current_box->tag_id);
     ui->color_box->setCurrentIndex(current_box->color_id);
-    // ui->color_box->setCurrentText(current_box->getName());
+    
+
+    ui->deleteButton->setDefault(true);
+    ui->deleteButton->setFocus();
+
     QWidget::connect(ui->cancelButton, &QPushButton::pressed, this, &QDialog::hide);
+    
+
+    QShortcut *enterShortcut = new QShortcut(QKeySequence(Qt::Key_Return), this);
+    connect(enterShortcut, &QShortcut::activated, this, &LabelDialog::on_deleteButton_pressed);
 }
+
+
 
 LabelDialog::~LabelDialog() {
     delete ui;
@@ -41,11 +51,10 @@ void LabelDialog::on_saveButton_pressed() {
     this->accept(); // 使用 accept() 而不是 hide()
 }
 
-void LabelDialog::on_deleteButton_pressed(){
+void LabelDialog::on_deleteButton_pressed() {
     emit removeBoxEvent(current_box);
-    this->accept(); // 使用 accept() 而不是 hide()
+    this->accept();
 }
-
 void update_list_name(const LabelMode mode){
     switch(mode){
         case Armor:

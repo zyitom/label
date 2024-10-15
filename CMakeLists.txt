@@ -14,7 +14,7 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 find_package(Qt${QT_VERSION} COMPONENTS ${REQUIRED_LIBS} REQUIRED)
 find_package(OpenCV REQUIRED)
-
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include_directories(.)
 find_package(yaml-cpp REQUIRED)
 

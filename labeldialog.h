@@ -35,6 +35,8 @@ private:
     Ui::LabelDialog *ui = nullptr;
 
     QVector<box_t>::iterator current_box;
+
+    
 protected:
     void closeEvent(QCloseEvent *event) override;
 };

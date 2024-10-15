@@ -45,18 +45,18 @@ BaseNetDetectorParams YoloxSmartModel::loadConfig(const std::string& config_path
 }
 YoloxSmartModel::YoloxSmartModel(int detect_mode = 0) {
     detect_mode_ = detect_mode;
-            std::cout<<"12343432qweqw4"<<std::endl;
+
     std::string config_path = "/home/zyi/label/config.yaml";
 try {
     params_ = loadConfig(config_path, detect_mode_);
-            std::cout<<"12343432qweqw4"<<std::endl;
-    
 } catch (const std::exception& e) {
     std::cerr << "Error loading config: " << e.what() << std::endl;
 }
     net_ = cv::dnn::readNet(params_.net_params.MODEL_PATH);
     net_.setPreferableBackend(cv::dnn::DNN_BACKEND_OPENCV);
     net_.setPreferableTarget(cv::dnn::DNN_TARGET_CPU); 
+    const int strides[3] = {8, 16, 32};
+    generate_grids_and_stride(INPUT_W, INPUT_H, strides, grid_strides_);
     std::cout << "YoloxSmartModel initialized with:" << std::endl;
     std::cout << "  NUM_CLASS: " << params_.net_params.NUM_CLASS << std::endl;
     std::cout << "  NUM_COLORS: " << params_.net_params.NUM_COLORS << std::endl;
@@ -69,20 +69,15 @@ bool YoloxSmartModel::run(const QString &image_file, QVector<box_t> &boxes) {
     try {
     cv::Mat pre_img = static_resize(cv::imread(image_file.toStdString()));
 
-
-    
-    // Create a 4D blob from a frame
     cv::Mat blob;
     cv::dnn::blobFromImage(pre_img, blob, 1.0, cv::Size(INPUT_W, INPUT_H), cv::Scalar(), true, false);
-
     
-    // Run a model
-       net_.setInput(blob);
+    net_.setInput(blob);
     std::vector<cv::Mat> outputs;
     net_.forward(outputs, net_.getUnconnectedOutLayersNames());
   
-    // Post-processing
-       std::vector<Object> objects;
+
+    std::vector<Object> objects;
     decode(outputs[0].ptr<float>(), objects, scale_);
 
    
@@ -94,9 +89,6 @@ bool YoloxSmartModel::run(const QString &image_file, QVector<box_t> &boxes) {
                 cv::circle(show_img, obj.apexes[i], 2, cv::Scalar(0, 0, 255), 2);
             }
         }
-        cv::imshow("YOLOX", show_img);
-        cv::waitKey(0);
-     
         boxes.clear();
         
       

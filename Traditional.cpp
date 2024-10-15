@@ -7,7 +7,7 @@
 #include <iostream>
 #include <QString>
 TraditionalDetector::TraditionalDetector() {
-    threshold = 0.5;
+    threshold = 0.6;
     model_path_ = "../resource/mlp.onnx";
     label_path_ = "../resource/label.txt";
 
