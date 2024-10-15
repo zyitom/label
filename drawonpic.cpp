@@ -689,6 +689,7 @@ void DrawOnPic::openLabelDialog() {
                 emit labelChanged(current_label);
                 update();
             }
+            emit labelDialogClosed(focus_box_index);  // 发送信号，包含当前编辑的框的索引
             currentLabelDialog = nullptr;
         });
         currentLabelDialog->activateAndFocus();

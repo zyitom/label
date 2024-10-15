@@ -5,6 +5,7 @@
 #include <QCoreApplication>
 #include <QMessageBox>
 #include <QTimer>
+#include <drawonpic.h>
 class IndexQListWidgetItem : public QListWidgetItem {
 public:
     IndexQListWidgetItem(QString name, int index) : QListWidgetItem(name), index(index) {
@@ -30,6 +31,7 @@ MainWindow::MainWindow(QWidget *parent, std::string path, int init_mode) :
     QObject::connect(ui->coverBrushButton, &QPushButton::clicked, ui->label, &DrawOnPic::cover_brush);
     QObject::connect(ui->label, &DrawOnPic::update_list_name_signal, [=](){update_list_name(ui->label->label_mode);});
     QObject::connect(ui->configurePushButton, &QPushButton::clicked, [=](){cdialog->show_configure();});
+    QObject::connect(ui->label, &DrawOnPic::labelDialogClosed, this, &MainWindow::onLabelDialogClosed);
     QObject::connect(ui->label, &DrawOnPic::delCurrentImage, [=]() {
         ui->label->enh_img = NULL_IMG;
         ui->label->modified_img = NULL_IMG;
@@ -84,6 +86,16 @@ MainWindow::MainWindow(QWidget *parent, std::string path, int init_mode) :
         this->installEventFilter(this);
     }
 }
+
+void MainWindow::onLabelDialogClosed(int boxIndex)
+{
+    // 确保 labelListWidget 存在且有足够的项
+    if (ui->labelListWidget && ui->labelListWidget->count() > boxIndex) {
+        ui->labelListWidget->setCurrentRow(boxIndex);
+        ui->labelListWidget->setFocus();
+    }
+}
+
 void MainWindow::initializeModel(int modelType) {
     QString modelMode;
     switch (modelType) {

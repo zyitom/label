@@ -223,6 +223,7 @@ public slots:
 
     void verifyBoxes();
 
+
 signals:
 
     void openLabelDialogRequested(QVector<box_t>::iterator box_iter);
@@ -234,6 +235,7 @@ signals:
 
     void update_list_name_signal(const LabelMode mode);
 
+    void labelDialogClosed(int boxIndex);
 private:
 
 

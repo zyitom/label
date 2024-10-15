@@ -63,6 +63,7 @@ private slots:
 
     void on_modelTypeComboBox_currentIndexChanged(int index);
 
+    void onLabelDialogClosed(int boxIndex);
 private:
     int lastEditedLabelIndex; // 记录最后编辑的标签索引
 
