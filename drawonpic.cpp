@@ -690,9 +690,8 @@ void DrawOnPic::openLabelDialog() {
                 update();
             }
             currentLabelDialog = nullptr;
-            this->setFocus(); // 确保 DrawOnPic 重新获得焦点
         });
-        currentLabelDialog->show();
+        currentLabelDialog->activateAndFocus();
     } else {
         qDebug() << "No box selected for editing";
     }

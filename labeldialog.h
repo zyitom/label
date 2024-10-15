@@ -20,6 +20,8 @@ public:
 
     void setup_boxes(const LabelMode mode);
 
+    void activateAndFocus();
+
 signals:
 
     void removeBoxEvent(QVector<box_t>::iterator box_iter);
@@ -30,13 +32,19 @@ private slots:
 
     void on_saveButton_pressed();
     void on_deleteButton_pressed();
+    void handleEnterKey();
+    void onComboBoxChanged(int);
+protected:
+ bool eventFilter(QObject *obj, QEvent *event) override;
+    void showEvent(QShowEvent *event) override;
+    void changeEvent(QEvent *event) override;
 
 private:
     Ui::LabelDialog *ui = nullptr;
 
     QVector<box_t>::iterator current_box;
 
-    
+    void ensureDialogFocus();
 protected:
     void closeEvent(QCloseEvent *event) override;
 };
