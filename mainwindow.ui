@@ -64,7 +64,6 @@
          </item>
         </layout>
        </item>
-       <!-- 新添加的模型选择按钮和模型类型下拉框 -->
        <item>
         <widget class="QPushButton" name="selectModelPushButton">
          <property name="text">
@@ -191,6 +190,9 @@
          <property name="text">
           <string>删除图片 (2)</string>
          </property>
+         <property name="shortcut">
+          <string>2</string>
+         </property>
         </widget>
        </item>
        <item>
@@ -240,6 +242,7 @@
        <item>
         <widget class="QLabel" name="labelModelName">
          <property name="text">
+          <string/>
          </property>
         </widget>
        </item>

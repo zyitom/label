@@ -6,6 +6,8 @@
 #include <QMessageBox>
 #include <QTimer>
 #include <drawonpic.h>
+#include <QProcess>
+#include <QMessageBox>
 class IndexQListWidgetItem : public QListWidgetItem {
 public:
     IndexQListWidgetItem(QString name, int index) : QListWidgetItem(name), index(index) {
@@ -454,15 +456,134 @@ void MainWindow::on_upLabelButton_clicked() {
         qDebug() << "Invalid label index";
     }
 }
-void MainWindow::on_downLabelButton_clicked() {
-    int next_idx = ui->labelListWidget->currentRow() + 1;
-    ui->labelListWidget->setCurrentRow(next_idx < ui->labelListWidget->count() ? next_idx : 0);
+#include <QDebug>
+#include <QDir>
+
+void MainWindow::on_delImageButton_clicked()
+{
+    QString imageFile = ui->label->current_file;
+    QString textFile = imageFile;
+    textFile.replace(".png", ".txt");  // 注意这里改用.png
+
+    qDebug() << "Attempting to delete image file:" << imageFile;
+    qDebug() << "Corresponding text file:" << textFile;
+
+    QProcess process;
+    QStringList args;
+
+    // 检查图像文件是否存在
+    if (!QFile::exists(imageFile)) {
+        qDebug() << "Image file does not exist:" << imageFile;
+        QMessageBox::warning(this, "Error", "Image file does not exist: " + imageFile);
+        return;
+    }
+
+    // 移动图像文件到回收站
+    args << "trash" << imageFile;
+    process.start("gio", args);
+    process.waitForFinished();
+
+    if (process.exitCode() == 0) {
+        qDebug() << "Image file moved to trash successfully";
+
+        // 检查文本文件是否存在
+        if (QFile::exists(textFile)) {
+            // 如果文本文件存在，尝试移动到回收站
+            args.clear();
+            args << "trash" << textFile;
+            process.start("gio", args);
+            process.waitForFinished();
+
+            if (process.exitCode() == 0) {
+                qDebug() << "Text file moved to trash successfully";
+            } else {
+                qDebug() << "Failed to move text file to trash. Error:" << process.errorString();
+                QMessageBox::warning(this, "Warning", "Image file moved to trash, but failed to move text file. Error: " + process.errorString());
+            }
+        } else {
+            qDebug() << "Text file does not exist, skipping:" << textFile;
+        }
+
+        // 更新UI
+        updateUIAfterDeletion();
+
+        //QMessageBox::information(this, "Success", "Image file moved to trash successfully.");
+    } else {
+        qDebug() << "Failed to move image file to trash. Error:" << process.errorString();
+        QMessageBox::warning(this, "Error", "Failed to move image file to trash. Error: " + process.errorString());
+    }
+
+    // 强制刷新文件列表小部件
+    ui->fileListWidget->repaint();
 }
 
-void MainWindow::on_delImageButton_clicked() {
-    remove(ui->label->current_file.toStdString().c_str());
-    remove(ui->label->current_file.replace(".jpg", ".txt").toStdString().c_str());
-    ui->label->del_file = false;
+void MainWindow::updateUIAfterDeletion()
+{
+    // 从文件列表中移除项目
+    int currentRow = ui->fileListWidget->currentRow();
+    QListWidgetItem* item = ui->fileListWidget->takeItem(currentRow);
+    if (item) {
+        delete item;
+        qDebug() << "Item removed from fileListWidget at row:" << currentRow;
+    } else {
+        qDebug() << "Failed to remove item from fileListWidget at row:" << currentRow;
+    }
+
+    // 更新剩余项目的索引
+    for (int i = currentRow; i < ui->fileListWidget->count(); ++i) {
+        IndexQListWidgetItem* indexItem = dynamic_cast<IndexQListWidgetItem*>(ui->fileListWidget->item(i));
+        if (indexItem) {
+            indexItem->setIndex(indexItem->getIndex() - 1);
+            qDebug() << "Updated index for item at row" << i << "to" << indexItem->getIndex();
+        }
+    }
+
+    // 更新滑动条最大值
+    ui->fileListHorizontalSlider->setMaximum(ui->fileListWidget->count());
+    qDebug() << "Updated fileListHorizontalSlider maximum to:" << ui->fileListWidget->count();
+
+    // 移动到下一个图像（如果有的话）
+    if (ui->fileListWidget->count() > 0) {
+        if (currentRow >= ui->fileListWidget->count()) {
+            currentRow = ui->fileListWidget->count() - 1;
+        }
+        ui->fileListWidget->setCurrentRow(currentRow);
+        qDebug() << "Set current row to:" << currentRow;
+
+        // 更新文件列表标签
+        ui->fileListLabel->setText(QString::asprintf("[%d/%d]", currentRow + 1, ui->fileListWidget->count()));
+        qDebug() << "Updated fileListLabel to:" << ui->fileListLabel->text();
+
+        // 更新滑动条值
+        ui->fileListHorizontalSlider->setValue(currentRow + 1);
+        qDebug() << "Set fileListHorizontalSlider value to:" << (currentRow + 1);
+
+        // 加载新的当前文件
+        QListWidgetItem* currentItem = ui->fileListWidget->currentItem();
+        if (currentItem) {
+            QString newFile = currentItem->text();
+            ui->label->setCurrentFile(newFile);
+            qDebug() << "Loaded new current file:" << newFile;
+        }
+    } else {
+        // 如果没有更多图像，清除标签并重置UI
+        ui->label->clear();
+        ui->fileListLabel->setText("[0/0]");
+        ui->fileListHorizontalSlider->setValue(0);
+        qDebug() << "No more images. Cleared label and reset UI";
+    }
+
+    // 刷新标签视图
+    ui->label->update();
+    qDebug() << "Label view refreshed";
+}
+void MainWindow::on_downLabelButton_clicked() {
+    int next_idx = ui->labelListWidget->currentRow() + 1;
+    if (next_idx < ui->labelListWidget->count()) {
+        ui->labelListWidget->setCurrentRow(next_idx);
+    } else {
+        ui->labelListWidget->setCurrentRow(0);  // 循环到第一个标签
+    }
 }
 
 void MainWindow::on_autoEnhanceVCheckBox_stateChanged(int check) {

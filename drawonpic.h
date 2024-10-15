@@ -1,6 +1,5 @@
 #ifndef DRAWONPIC_H
 #define DRAWONPIC_H
-#include "drawonpic.h"
 #include "Traditional.h"
 #include <QLabel>
 #include <QImage>

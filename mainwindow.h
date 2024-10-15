@@ -77,6 +77,8 @@ private:
 
     QString getModelFileName(const QString& fullPath) ;
 
+    void updateUIAfterDeletion();
+
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
 };
