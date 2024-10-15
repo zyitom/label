@@ -74,6 +74,8 @@ private:
 
     QLabel *labelModelName;
 
+    QString getModelFileName(const QString& fullPath) ;
+
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
 };

@@ -8,8 +8,8 @@
 #include <QString>
 TraditionalDetector::TraditionalDetector() {
     threshold = 0.5;
-    model_path_ = "/home/zyi/Desktop/autoaim_ws/install/traditional_detectors/share/traditional_detectors/model/mlp.onnx";
-    label_path_ = "/home/zyi/Desktop/autoaim_ws/install/traditional_detectors/share/traditional_detectors/model/label.txt";
+    model_path_ = "../resource/mlp.onnx";
+    label_path_ = "../resource/label.txt";
 
     net = cv::dnn::readNetFromONNX(model_path_);
     std::ifstream label_file(label_path_);

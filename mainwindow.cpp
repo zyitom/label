@@ -92,6 +92,9 @@ MainWindow::~MainWindow() {
     delete cdialog;
     delete ui;
 }
+QString MainWindow::getModelFileName(const QString& fullPath) {
+    return QFileInfo(fullPath).fileName();
+}
 
 void MainWindow::on_openDirectoryPushButton_clicked() {
     ui->label->reset();     // 重置绘图控件
