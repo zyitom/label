@@ -48,7 +48,7 @@ MainWindow::MainWindow(QWidget *parent, std::string path, int init_mode) :
     ui->label->label_mode = LabelMode(ui->label->configure.last_mode);
     ui->labelOpenvino->setText(ui->label->model_mode()); // 获取当前模型模式，并显示在窗口左下角
     labelModelName = ui->labelModelName;
-    labelModelName->setText(ui->label->configure.last_model_name);
+    labelModelName->setText(getModelFileName(ui->label->configure.last_model_name));
     ui->autoSaveCheckBox->setCheckState(Qt::Checked);
     ui->modeComboBox->setCurrentIndex(init_mode);
     ui->autoEnhanceVCheckBox->setCheckState(ui->label->configure.auto_enhance_V ? Qt::Checked : Qt::Unchecked);
@@ -173,16 +173,16 @@ void MainWindow::on_modelTypeComboBox_currentIndexChanged(int index) {
             ui->label->configure.last_model_name = "another-model.onnx";
         break;
         // Add more model names as needed
-        default:
-            ui->label->configure.last_model_name = "default-model.onnx";
-        break;
+        // default:
+        //     ui->label->configure.last_model_name = "default-model.onnx";
+        // break;
     }
     ui->label->configure.model_path = "../resources/" + ui->label->configure.last_model_name;
     ui->label->configure.last_model_type = index;
     qDebug() << "Model path changed to:" << ui->label->configure.model_path;
 
     // Update the model name label
-    labelModelName->setText(ui->label->configure.last_model_name);
+    labelModelName->setText(getModelFileName(ui->label->configure.last_model_name));
 }
 
 void MainWindow::on_selectModelPushButton_clicked() {
