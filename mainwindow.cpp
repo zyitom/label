@@ -17,7 +17,6 @@ public:
 private:
     int index;
 };
-
 MainWindow::MainWindow(QWidget *parent, std::string path, int init_mode) :
         QMainWindow(parent),
         ui(new Ui::MainWindow) {
@@ -50,7 +49,8 @@ MainWindow::MainWindow(QWidget *parent, std::string path, int init_mode) :
     labelModelName = ui->labelModelName;
     labelModelName->setText(getModelFileName(ui->label->configure.last_model_name));
     ui->autoSaveCheckBox->setCheckState(Qt::Checked);
-    ui->modeComboBox->setCurrentIndex(init_mode);
+    ui->modeComboBox->setCurrentIndex(ui->label->configure.last_mode);
+    ui->modelTypeComboBox->setCurrentIndex(ui->label->configure.last_model_type);
     ui->autoEnhanceVCheckBox->setCheckState(ui->label->configure.auto_enhance_V ? Qt::Checked : Qt::Unchecked);
     update_list_name(ui->label->label_mode);
     bool last_flag = false;
