@@ -59,7 +59,7 @@ private slots:
     
     void on_autoEnhanceVCheckBox_stateChanged(int check);
 
-    void on_selectModelPushButton_clicked();
+    void initializeModel(int modelType);
 
     void on_modelTypeComboBox_currentIndexChanged(int index);
 

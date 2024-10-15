@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 13.0.1, 2024-09-13T00:44:25. -->
+<!-- Written by QtCreator 13.0.1, 2024-10-15T19:53:54. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
-  <value type="QByteArray">{5665fdb1-b256-45d6-9d8c-c9564e8e71d3}</value>
+  <value type="QByteArray">{da9726eb-8463-4216-b2f5-036bcf912832}</value>
  </data>
  <data>
   <variable>ProjectExplorer.Project.ActiveTarget</variable>
@@ -89,9 +89,9 @@
   <variable>ProjectExplorer.Project.Target.0</variable>
   <valuemap type="QVariantMap">
    <value type="QString" key="DeviceType">Desktop</value>
-   <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Desktop Qt 5.15.17 GCC 64bit</value>
-   <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">Desktop Qt 5.15.17 GCC 64bit</value>
-   <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">qt.qt5.51517.gcc_64_kit</value>
+   <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Imported Kit</value>
+   <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">Imported Kit</value>
+   <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">{7dcab8c3-11a2-4321-b859-b1b456f43816}</value>
    <value type="qlonglong" key="ProjectExplorer.Target.ActiveBuildConfiguration">0</value>
    <value type="qlonglong" key="ProjectExplorer.Target.ActiveDeployConfiguration">0</value>
    <value type="qlonglong" key="ProjectExplorer.Target.ActiveRunConfiguration">0</value>
@@ -106,10 +106,9 @@
 -DQT_QMAKE_EXECUTABLE:FILEPATH=%{Qt:qmakeExecutable}
 -DCMAKE_PREFIX_PATH:PATH=%{Qt:QT_INSTALL_PREFIX}
 -DCMAKE_C_COMPILER:FILEPATH=%{Compiler:Executable:C}
--DCMAKE_CXX_COMPILER:FILEPATH=%{Compiler:Executable:Cxx}
--DCMAKE_CXX_FLAGS_INIT:STRING=%{Qt:QML_DEBUG_FLAG}</value>
-    <value type="QString" key="CMake.Source.Directory">/home/zyi/Desktop/label</value>
-    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">/home/zyi/Desktop/label/build</value>
+-DCMAKE_CXX_COMPILER:FILEPATH=%{Compiler:Executable:Cxx}</value>
+    <value type="QString" key="CMake.Source.Directory">/home/zyi/label</value>
+    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">/home/zyi/label/build</value>
     <valuemap type="QVariantMap" key="ProjectExplorer.BuildConfiguration.BuildStepList.0">
      <valuemap type="QVariantMap" key="ProjectExplorer.BuildStepList.Step.0">
       <value type="QString" key="CMakeProjectManager.MakeStep.BuildPreset"></value>

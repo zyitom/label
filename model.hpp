@@ -36,17 +36,17 @@ public:
     }
 };
 
-class SmartModel {
-public:
-    explicit SmartModel();
+// class SmartModel {
+// public:
+//     explicit SmartModel();
 
-    bool run(const QString &image_file, QVector<box_t> &boxes);
+//     bool run(const QString &image_file, QVector<box_t> &boxes);
 
-    QString get_mode() const { return mode; }
+//     QString get_mode() const { return mode; }
 
-private:
-    cv::dnn::Net net;
-    QString mode;
-};
+// private:
+//     cv::dnn::Net net;
+//     QString mode;
+// };
 
 #endif /* _MODEL_HPP_ */

@@ -11,7 +11,7 @@ public:
     float V_rate = 4;
     QString last_open = ".";
     int last_pic = 1;
-    int last_mode = 0;
+    int last_mode = 0; // 0: Armor, 1: Wind_Armor
     short auto_enhance_V = 0;
     QString last_model_name = "";
     int last_model_type = 0;

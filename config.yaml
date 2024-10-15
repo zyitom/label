@@ -1,0 +1,18 @@
+detector:
+  classifier_threshold: 0.6
+  armor_paras:
+    model_path: "/home/zyi/Desktop/openvino_class/fl68-bigpa-9700.onnx"
+    num_class: 8
+    num_colors: 2
+    nms_thresh: 0.5
+    num_apex: 4
+    input_w: 480
+    input_h: 384
+  energy_paras:
+    model_path: "../model/energy-8-n6-9994.onnx"
+    num_class: 3
+    num_colors: 2
+    nms_thresh: 0.5
+    num_apex: 4
+    input_w: 480
+    input_h: 384

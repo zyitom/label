@@ -18,7 +18,8 @@
 #include "labeldialog.h"
 #include <QtMath>
 #include "Traditional.h"
-DrawOnPic::DrawOnPic(QWidget *parent) : QLabel(parent), model() {
+//DrawOnPic::DrawOnPic(QWidget *parent) : QLabel(parent), model() {
+DrawOnPic::DrawOnPic(QWidget *parent) : QLabel(parent) {
     pen_point_focus.setWidth(5);
     pen_point_focus.setColor(Qt::green);
 
@@ -90,6 +91,7 @@ DrawOnPic::DrawOnPic(QWidget *parent) : QLabel(parent), model() {
     // 读取鼠标键盘的数据
     this->setMouseTracking(true);
     this->grabKeyboard();
+
 }
 
 void DrawOnPic::mousePressEvent(QMouseEvent *event) {
@@ -1189,33 +1191,36 @@ void DrawOnPic::removeBox(QVector<box_t>::iterator box_iter) {
 //     }
 //     updateBox();
 // }
-void DrawOnPic::smart() {
-    if (current_file.isEmpty()) return;
-
-    lastSmartLabels = current_label;
-
-    using namespace std::chrono;
-    auto t1 = high_resolution_clock::now();
-
-    if (!model.run(current_file, current_label)) {
-        QMessageBox::warning(nullptr, "warning", "Cannot run smart!\n"
-                                                 "This maybe due to compiling without openvino or a broken model file.\n"
-                                                 "See warning.txt for detailed information.",
-                             QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
-        return;
+void DrawOnPic::setModelMode(const QString &modelMode) {
+        currentModel = SmartModelFactory::createSmartModel(modelMode);
     }
+ void DrawOnPic::smart() {
+        if (current_file.isEmpty() || !currentModel) return;
 
-    auto t2 = high_resolution_clock::now();
-    latency_ms = duration_cast<milliseconds>(t2 - t1).count();
-    qDebug("latency=%dms", latency_ms);
+        lastSmartLabels = current_label;
 
+        using namespace std::chrono;
+        auto t1 = high_resolution_clock::now();
 
-    for (auto &l: current_label) {
-        for (auto &pt: l.pts) {
-            pt.rx() /= img->width();
-            pt.ry() /= img->height();
+        if (!currentModel->run(current_file, current_label)) {
+            QMessageBox::warning(nullptr, "warning", "Model failed to run!\n"
+                                                     "This may be due to compiling without proper dependencies or broken model files.\n"
+                                                     "See warning.txt for detailed information.",
+                                 QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+            return;
         }
-    }
+
+        auto t2 = high_resolution_clock::now();
+        latency_ms = duration_cast<milliseconds>(t2 - t1).count();
+        qDebug("latency=%dms", latency_ms);
+
+        // 模型输出的像素坐标变为归一化坐标
+        for (auto &l: current_label) {
+            for (auto &pt: l.pts) {
+                pt.rx() /= img->width();
+                pt.ry() /= img->height();
+            }
+        }
 
     // 使用 TraditionalDetector 进行验证
     TraditionalDetector detector;

@@ -45,14 +45,15 @@ MainWindow::MainWindow(QWidget *parent, std::string path, int init_mode) :
         ui->fileListHorizontalSlider->setMaximum(ui->fileListWidget->count());
     });
     ui->label->label_mode = LabelMode(ui->label->configure.last_mode);
-    ui->labelOpenvino->setText(ui->label->model_mode()); // 获取当前模型模式，并显示在窗口左下角
+    //ui->labelOpenvino->setText(ui->label->model_mode()); // 获取当前模型模式，并显示在窗口左下角
     labelModelName = ui->labelModelName;
-    labelModelName->setText(getModelFileName(ui->label->configure.last_model_name));
+    //labelModelName->setText(getModelFileName(ui->label->configure.last_model_name));
     ui->autoSaveCheckBox->setCheckState(Qt::Checked);
     ui->modeComboBox->setCurrentIndex(ui->label->configure.last_mode);
     ui->modelTypeComboBox->setCurrentIndex(ui->label->configure.last_model_type);
     ui->autoEnhanceVCheckBox->setCheckState(ui->label->configure.auto_enhance_V ? Qt::Checked : Qt::Unchecked);
     update_list_name(ui->label->label_mode);
+    initializeModel(ui->label->configure.last_model_type);
     bool last_flag = false;
     if(path == ""){
         path = ui->label->configure.last_open.toStdString();
@@ -85,6 +86,20 @@ MainWindow::MainWindow(QWidget *parent, std::string path, int init_mode) :
         ui->label->setFocusPolicy(Qt::StrongFocus);
         this->installEventFilter(this);
     }
+}
+void MainWindow::initializeModel(int modelType) {
+    QString modelMode;
+    switch (modelType) {
+        case 0:
+            modelMode = "YOLOX";
+            break;
+        case 1:
+            modelMode = "YOLOv5";
+            break;
+    }
+
+    ui->label->setModelMode(modelMode);
+    qDebug() << "Model initialized to:" << modelMode;
 }
 
 MainWindow::~MainWindow() {
@@ -164,42 +179,42 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
 }
 
 
-void MainWindow::on_modelTypeComboBox_currentIndexChanged(int index) {
-    switch (index) {
-        case 0:
-            ui->label->configure.last_model_name = "model-opt.onnx";
-        break;
-        case 1:
-            ui->label->configure.last_model_name = "another-model.onnx";
-        break;
-        // Add more model names as needed
-        // default:
-        //     ui->label->configure.last_model_name = "default-model.onnx";
-        // break;
-    }
-    ui->label->configure.model_path = "../resources/" + ui->label->configure.last_model_name;
-    ui->label->configure.last_model_type = index;
-    qDebug() << "Model path changed to:" << ui->label->configure.model_path;
+// void MainWindow::on_modelTypeComboBox_currentIndexChanged(int index) {
+//     switch (index) {
+//         case 0:
+//             ui->label->configure.last_model_name = "model-opt.onnx";
+//         break;
+//         case 1:
+//             ui->label->configure.last_model_name = "another-model.onnx";
+//         break;
+//         // Add more model names as needed
+//         // default:
+//         //     ui->label->configure.last_model_name = "default-model.onnx";
+//         // break;
+//     }
+//     ui->label->configure.model_path = "../resources/" + ui->label->configure.last_model_name;
+//     ui->label->configure.last_model_type = index;
+//     qDebug() << "Model path changed to:" << ui->label->configure.model_path;
 
-    // Update the model name label
-    labelModelName->setText(getModelFileName(ui->label->configure.last_model_name));
-}
+//     // Update the model name label
+//     labelModelName->setText(getModelFileName(ui->label->configure.last_model_name));
+// }
 
-void MainWindow::on_selectModelPushButton_clicked() {
-    static int callCount = 0;
-    qDebug() << "Function called " << ++callCount << " times";
-    QString fileName = QFileDialog::getOpenFileName(this,
-        tr("Select ONNX Model"), "",
-        tr("ONNX Models (*.onnx);;All Files (*)"));
-    if (!fileName.isEmpty()) {
-        qDebug() << "Selected ONNX model:" << fileName;
-        ui->label->configure.model_path = fileName;
-        ui->label->configure.last_model_name = QFileInfo(fileName).fileName();
+// void MainWindow::on_selectModelPushButton_clicked() {
+//     static int callCount = 0;
+//     qDebug() << "Function called " << ++callCount << " times";
+//     QString fileName = QFileDialog::getOpenFileName(this,
+//         tr("Select ONNX Model"), "",
+//         tr("ONNX Models (*.onnx);;All Files (*)"));
+//     if (!fileName.isEmpty()) {
+//         qDebug() << "Selected ONNX model:" << fileName;
+//         ui->label->configure.model_path = fileName;
+//         ui->label->configure.last_model_name = QFileInfo(fileName).fileName();
 
-        // Update the model name label
-        labelModelName->setText(ui->label->configure.last_model_name);
-    }
-}
+//         // Update the model name label
+//         labelModelName->setText(ui->label->configure.last_model_name);
+//     }
+// }
 void MainWindow::onLabelDialogFinished(int result) {
     if (result == QDialog::Accepted) {
         QTimer::singleShot(0, this, [this]() {
@@ -225,11 +240,19 @@ void MainWindow::on_labelListWidget_currentItemChanged(QListWidgetItem *current,
     ui->label->setFocusBox(idx);
 }
 
-void MainWindow::on_smartPushButton_clicked() {
-    // 进行一次自动标注
-    ui->label->smart();
+// void MainWindow::on_smartPushButton_clicked() {
+//     // 进行一次自动标注
+//     ui->label->smart();
+// }
+void MainWindow::on_modelTypeComboBox_currentIndexChanged(int index) {
+    initializeModel(index);
+    ui->label->configure.last_model_type = index;
 }
 
+    void MainWindow::on_smartPushButton_clicked() {
+        // 进行一次自动标注
+        ui->label->smart();
+    }
 /*
 void MainWindow::on_smartAllPushButton_clicked() {
     // 遍历所有目标，依次进行自动标注
