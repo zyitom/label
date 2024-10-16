@@ -8,6 +8,9 @@
 #include <drawonpic.h>
 #include <QProcess>
 #include <QMessageBox>
+#include <QDebug>
+#include <QDir>
+
 class IndexQListWidgetItem : public QListWidgetItem {
 public:
     IndexQListWidgetItem(QString name, int index) : QListWidgetItem(name), index(index) {
@@ -73,14 +76,15 @@ MainWindow::MainWindow(QWidget *parent, std::string path, int init_mode) :
         loadFiles(QString::fromStdString(path));
         
         // Set the current item and slider value
-        if (!tfile.empty()) {
-            for (int i = 0; i < ui->fileListWidget->count(); ++i) {
-                if (ui->fileListWidget->item(i)->text().endsWith(QString::fromStdString(tfile))) {
-                    ui->fileListWidget->setCurrentRow(i);
-                    file_index = i + 1;
-                    break;
-                }
-            }
+       if (!tfile.empty()) {
+    for (int i = 0; i < ui->fileListWidget->count(); ++i) {
+        QListWidgetItem* item = ui->fileListWidget->item(i);
+        if (QFileInfo(item->data(Qt::UserRole).toString()).fileName() == QString::fromStdString(tfile)) {
+            ui->fileListWidget->setCurrentRow(i);
+            file_index = i + 1;
+            break;
+        }
+    }
         } else {
             ui->fileListWidget->setCurrentRow(0);
         }
@@ -458,14 +462,16 @@ void MainWindow::on_upLabelButton_clicked() {
         qDebug() << "Invalid label index";
     }
 }
-#include <QDebug>
-#include <QDir>
 
 void MainWindow::on_delImageButton_clicked()
 {
-    QString imageFile = ui->label->current_file;
+    QListWidgetItem* currentItem = ui->fileListWidget->currentItem();
+    if (!currentItem) return;
+
+    QString imageFile = currentItem->data(Qt::UserRole).toString();
     QString textFile = imageFile;
-    textFile.replace(".png", ".txt");  // 注意这里改用.png
+    textFile.replace(QRegExp("\\.(png|jpg|jpeg)$"), ".txt");
+
 
     qDebug() << "Attempting to delete image file:" << imageFile;
     qDebug() << "Corresponding text file:" << textFile;
@@ -520,8 +526,8 @@ void MainWindow::on_delImageButton_clicked()
 }
 void MainWindow::updateFileListItemColor(QListWidgetItem* item) {
     if (!item) return;
-    QString imageFile = item->text();
-    QString textFile = imageFile;
+    QString fullPath = item->data(Qt::UserRole).toString();
+    QString textFile = fullPath;
     textFile.replace(QRegExp("\\.(png|jpg|jpeg)$"), ".txt");
 
     if (QFile::exists(textFile)) {
@@ -547,7 +553,8 @@ void MainWindow::loadFiles(const QString& path) {
     int idx = 0;
     for (const QString& file : dir.entryList(image_filter, QDir::Files)) {
         QString fullPath = dir.absoluteFilePath(file);
-        auto item = new IndexQListWidgetItem(fullPath, idx++);
+        auto item = new IndexQListWidgetItem(QFileInfo(file).fileName(), idx++);
+        item->setData(Qt::UserRole, fullPath);  // 存储完整路径作为用户数据
         ui->fileListWidget->addItem(item);
         updateFileListItemColor(item);
     }
@@ -576,16 +583,14 @@ void MainWindow::on_savePushButton_clicked() {
 
 
 
-// 更新 on_fileListWidget_currentItemChanged 函数
 void MainWindow::on_fileListWidget_currentItemChanged(QListWidgetItem *current, QListWidgetItem *previous) {
     if (current == nullptr) return;
-    ui->label->setCurrentFile(current->text());
+    QString fullPath = current->data(Qt::UserRole).toString();
+    ui->label->setCurrentFile(fullPath);
     int idx = static_cast<IndexQListWidgetItem *>(current)->getIndex();
     ui->fileListHorizontalSlider->setValue(idx + 1);
-    updateFileListItemColor(current);  // 直接传递 current 项
+    updateFileListItemColor(current);
 }
-
-
 
 
 void MainWindow::updateUIAfterDeletion()
