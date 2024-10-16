@@ -34,6 +34,7 @@ MainWindow::MainWindow(QWidget *parent, std::string path, int init_mode) :
     QObject::connect(ui->label, &DrawOnPic::update_list_name_signal, [=](){update_list_name(ui->label->label_mode);});
     QObject::connect(ui->configurePushButton, &QPushButton::clicked, [=](){cdialog->show_configure();});
     QObject::connect(ui->label, &DrawOnPic::labelDialogClosed, this, &MainWindow::onLabelDialogClosed);
+    QObject::connect(ui->savePushButton, &QPushButton::clicked, this, &MainWindow::on_savePushButton_clicked);
     QObject::connect(ui->label, &DrawOnPic::delCurrentImage, [=]() {
         ui->label->enh_img = NULL_IMG;
         ui->label->modified_img = NULL_IMG;
@@ -55,7 +56,7 @@ MainWindow::MainWindow(QWidget *parent, std::string path, int init_mode) :
     ui->autoEnhanceVCheckBox->setCheckState(ui->label->configure.auto_enhance_V ? Qt::Checked : Qt::Unchecked);
     update_list_name(ui->label->label_mode);
     initializeModel(ui->label->configure.last_model_type);
-    bool last_flag = false;
+ bool last_flag = false;
     if(path == ""){
         path = ui->label->configure.last_open.toStdString();
         last_flag = true;
@@ -67,22 +68,23 @@ MainWindow::MainWindow(QWidget *parent, std::string path, int init_mode) :
             tfile = path.substr(path.find_last_of('/') + 1);
             path = path.substr(0, path.find_last_of('/'));
         }
-        QDir dir(QString::fromStdString(path));
-        ui->label->reset();     // 重置绘图控件
-        QStringList image_filter = {"*.jpg", "*.png", "*.jpeg"};    // 支持的图像格式
-        ui->fileListWidget->clear();    // 清空文件列表
-        int idx = 0;
-        // 遍历文件夹下的图片，并添加到文件列表
-        for (QString file: dir.entryList(image_filter)) {
-            if (file == "." || file == "..") continue;
-            ui->fileListWidget->addItem(new IndexQListWidgetItem(dir.absoluteFilePath(file), idx++));
-            if (tfile == file.toStdString())
-                file_index = idx;
+        
+        // Use the loadFiles function here
+        loadFiles(QString::fromStdString(path));
+        
+        // Set the current item and slider value
+        if (!tfile.empty()) {
+            for (int i = 0; i < ui->fileListWidget->count(); ++i) {
+                if (ui->fileListWidget->item(i)->text().endsWith(QString::fromStdString(tfile))) {
+                    ui->fileListWidget->setCurrentRow(i);
+                    file_index = i + 1;
+                    break;
+                }
+            }
+        } else {
+            ui->fileListWidget->setCurrentRow(0);
         }
-        ui->fileListWidget->setCurrentItem(ui->fileListWidget->item(0));
-        // 设置拖动条
-        ui->fileListHorizontalSlider->setMinimum(1);
-        ui->fileListHorizontalSlider->setMaximum(ui->fileListWidget->count());
+        
         ui->fileListHorizontalSlider->setValue(last_flag ? ui->label->configure.last_pic : file_index);
         ui->label->setFocusPolicy(Qt::StrongFocus);
         this->installEventFilter(this);
@@ -122,34 +124,34 @@ QString MainWindow::getModelFileName(const QString& fullPath) {
     return QFileInfo(fullPath).fileName();
 }
 
-void MainWindow::on_openDirectoryPushButton_clicked() {
-    ui->label->reset();     // 重置绘图控件
-    QStringList image_filter = {"*.jpg", "*.png", "*.jpeg"};    // 支持的图像格式
-    QDir dir;
-    dir = QFileDialog::getExistingDirectory(this, "", ui->label->configure.last_open, QFileDialog::ShowDirsOnly);
-    ui->fileListWidget->clear();    // 清空文件列表
-    int idx = 0;
-    // 遍历文件夹下的图片，并添加到文件列表
-    for (QString file: dir.entryList(image_filter)) {
-        if (file == "." || file == "..") continue;
-        ui->fileListWidget->addItem(new IndexQListWidgetItem(dir.absoluteFilePath(file), idx++));
-    }
-    ui->fileListWidget->setCurrentItem(ui->fileListWidget->item(0));
-    // 设置拖动条
-    ui->fileListHorizontalSlider->setMinimum(1);
-    ui->fileListHorizontalSlider->setMaximum(ui->fileListWidget->count());
-    ui->fileListHorizontalSlider->setValue(1);
-    ui->label->configure.last_open = dir.path();
-}
+// void MainWindow::on_openDirectoryPushButton_clicked() {
+//     ui->label->reset();     // 重置绘图控件
+//     QStringList image_filter = {"*.jpg", "*.png", "*.jpeg"};    // 支持的图像格式
+//     QDir dir;
+//     dir = QFileDialog::getExistingDirectory(this, "", ui->label->configure.last_open, QFileDialog::ShowDirsOnly);
+//     ui->fileListWidget->clear();    // 清空文件列表
+//     int idx = 0;
+//     // 遍历文件夹下的图片，并添加到文件列表
+//     for (QString file: dir.entryList(image_filter)) {
+//         if (file == "." || file == "..") continue;
+//         ui->fileListWidget->addItem(new IndexQListWidgetItem(dir.absoluteFilePath(file), idx++));
+//     }
+//     ui->fileListWidget->setCurrentItem(ui->fileListWidget->item(0));
+//     // 设置拖动条
+//     ui->fileListHorizontalSlider->setMinimum(1);
+//     ui->fileListHorizontalSlider->setMaximum(ui->fileListWidget->count());
+//     ui->fileListHorizontalSlider->setValue(1);
+//     ui->label->configure.last_open = dir.path();
+// }
 
-void MainWindow::on_fileListWidget_currentItemChanged(QListWidgetItem *current, QListWidgetItem *previous) {
-    if (current == nullptr) return;
-    // 修改绘图区的内容
-    ui->label->setCurrentFile(current->text());
-    // 更新拖动条位置
-    int idx = static_cast<IndexQListWidgetItem *>(current)->getIndex();
-    ui->fileListHorizontalSlider->setValue(idx + 1);
-}
+// void MainWindow::on_fileListWidget_currentItemChanged(QListWidgetItem *current, QListWidgetItem *previous) {
+//     if (current == nullptr) return;
+//     // 修改绘图区的内容
+//     ui->label->setCurrentFile(current->text());
+//     // 更新拖动条位置
+//     int idx = static_cast<IndexQListWidgetItem *>(current)->getIndex();
+//     ui->fileListHorizontalSlider->setValue(idx + 1);
+// }
 
 void MainWindow::on_label_labelChanged(const QVector<box_t> &labels) {
     // 当添加/删除/修改当前图片的label时，重置右上角的标签列表
@@ -516,6 +518,75 @@ void MainWindow::on_delImageButton_clicked()
     // 强制刷新文件列表小部件
     ui->fileListWidget->repaint();
 }
+void MainWindow::updateFileListItemColor(QListWidgetItem* item) {
+    if (!item) return;
+    QString imageFile = item->text();
+    QString textFile = imageFile;
+    textFile.replace(QRegExp("\\.(png|jpg|jpeg)$"), ".txt");
+
+    if (QFile::exists(textFile)) {
+        item->setForeground(Qt::blue);
+    } else {
+        item->setForeground(Qt::black);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+void MainWindow::loadFiles(const QString& path) {
+    QDir dir(path);
+    QStringList image_filter = {"*.jpg", "*.png", "*.jpeg"};
+    ui->fileListWidget->clear();
+    int idx = 0;
+    for (const QString& file : dir.entryList(image_filter, QDir::Files)) {
+        QString fullPath = dir.absoluteFilePath(file);
+        auto item = new IndexQListWidgetItem(fullPath, idx++);
+        ui->fileListWidget->addItem(item);
+        updateFileListItemColor(item);
+    }
+    ui->fileListHorizontalSlider->setMinimum(1);
+    ui->fileListHorizontalSlider->setMaximum(ui->fileListWidget->count());
+    if (ui->fileListWidget->count() > 0) {
+        ui->fileListWidget->setCurrentRow(0);
+    }
+}
+
+void MainWindow::on_openDirectoryPushButton_clicked() {
+    QString dir = QFileDialog::getExistingDirectory(this, "", ui->label->configure.last_open, QFileDialog::ShowDirsOnly);
+    if (!dir.isEmpty()) {
+        loadFiles(dir);
+        ui->label->configure.last_open = dir;
+    }
+}
+// Update on_savePushButton_clicked to update the color
+void MainWindow::on_savePushButton_clicked() {
+    ui->label->saveLabel();
+    QListWidgetItem* currentItem = ui->fileListWidget->currentItem();
+    if (currentItem) {
+        updateFileListItemColor(currentItem);
+    }
+}
+
+
+
+// 更新 on_fileListWidget_currentItemChanged 函数
+void MainWindow::on_fileListWidget_currentItemChanged(QListWidgetItem *current, QListWidgetItem *previous) {
+    if (current == nullptr) return;
+    ui->label->setCurrentFile(current->text());
+    int idx = static_cast<IndexQListWidgetItem *>(current)->getIndex();
+    ui->fileListHorizontalSlider->setValue(idx + 1);
+    updateFileListItemColor(current);  // 直接传递 current 项
+}
+
+
+
 
 void MainWindow::updateUIAfterDeletion()
 {

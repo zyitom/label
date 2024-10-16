@@ -9,7 +9,7 @@
 #include "drawonpic.h"
 #include "labeldialog.h"
 #include "configuredialog.h"
-
+#include <QDir>
 namespace Ui {
     class MainWindow;
 }
@@ -64,6 +64,8 @@ private slots:
     void on_modelTypeComboBox_currentIndexChanged(int index);
 
     void onLabelDialogClosed(int boxIndex);
+
+    void on_savePushButton_clicked();
 private:
     int lastEditedLabelIndex; // 记录最后编辑的标签索引
 
@@ -78,7 +80,9 @@ private:
     QString getModelFileName(const QString& fullPath) ;
 
     void updateUIAfterDeletion();
-
+        
+   void loadFiles(const QString& path);
+    void updateFileListItemColor(QListWidgetItem* item);
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
 };
