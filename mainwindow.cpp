@@ -462,16 +462,15 @@ void MainWindow::on_upLabelButton_clicked() {
         qDebug() << "Invalid label index";
     }
 }
-
 void MainWindow::on_delImageButton_clicked()
 {
     QListWidgetItem* currentItem = ui->fileListWidget->currentItem();
     if (!currentItem) return;
 
+    int currentRow = ui->fileListWidget->currentRow();
     QString imageFile = currentItem->data(Qt::UserRole).toString();
     QString textFile = imageFile;
     textFile.replace(QRegExp("\\.(png|jpg|jpeg)$"), ".txt");
-
 
     qDebug() << "Attempting to delete image file:" << imageFile;
     qDebug() << "Corresponding text file:" << textFile;
@@ -479,14 +478,14 @@ void MainWindow::on_delImageButton_clicked()
     QProcess process;
     QStringList args;
 
-    // 检查图像文件是否存在
+    // Check if image file exists
     if (!QFile::exists(imageFile)) {
         qDebug() << "Image file does not exist:" << imageFile;
         QMessageBox::warning(this, "Error", "Image file does not exist: " + imageFile);
         return;
     }
 
-    // 移动图像文件到回收站
+    // Move image file to trash
     args << "trash" << imageFile;
     process.start("gio", args);
     process.waitForFinished();
@@ -494,9 +493,8 @@ void MainWindow::on_delImageButton_clicked()
     if (process.exitCode() == 0) {
         qDebug() << "Image file moved to trash successfully";
 
-        // 检查文本文件是否存在
+        // Check if text file exists and move to trash if it does
         if (QFile::exists(textFile)) {
-            // 如果文本文件存在，尝试移动到回收站
             args.clear();
             args << "trash" << textFile;
             process.start("gio", args);
@@ -506,23 +504,40 @@ void MainWindow::on_delImageButton_clicked()
                 qDebug() << "Text file moved to trash successfully";
             } else {
                 qDebug() << "Failed to move text file to trash. Error:" << process.errorString();
-                QMessageBox::warning(this, "Warning", "Image file moved to trash, but failed to move text file. Error: " + process.errorString());
             }
-        } else {
-            qDebug() << "Text file does not exist, skipping:" << textFile;
         }
 
-        // 更新UI
-        updateUIAfterDeletion();
+        // Remove the item from the list
+        delete ui->fileListWidget->takeItem(currentRow);
 
-        //QMessageBox::information(this, "Success", "Image file moved to trash successfully.");
+        // Update indices of remaining items
+        for (int i = currentRow; i < ui->fileListWidget->count(); ++i) {
+            IndexQListWidgetItem* item = static_cast<IndexQListWidgetItem*>(ui->fileListWidget->item(i));
+            item->setIndex(item->getIndex() - 1);
+        }
+
+        // Update slider maximum
+        ui->fileListHorizontalSlider->setMaximum(ui->fileListWidget->count());
+
+        // Move to next image (or last if at the end)
+        if (ui->fileListWidget->count() > 0) {
+            if (currentRow >= ui->fileListWidget->count()) {
+                currentRow = ui->fileListWidget->count() - 1;
+            }
+            ui->fileListWidget->setCurrentRow(currentRow);
+        } else {
+            // Clear label and reset UI if no more images
+            ui->label->clear();
+            ui->fileListLabel->setText("[0/0]");
+            ui->fileListHorizontalSlider->setValue(0);
+        }
+
+        // This will trigger on_fileListWidget_currentItemChanged
+        ui->fileListWidget->setCurrentRow(currentRow);
     } else {
         qDebug() << "Failed to move image file to trash. Error:" << process.errorString();
         QMessageBox::warning(this, "Error", "Failed to move image file to trash. Error: " + process.errorString());
     }
-
-    // 强制刷新文件列表小部件
-    ui->fileListWidget->repaint();
 }
 void MainWindow::updateFileListItemColor(QListWidgetItem* item) {
     if (!item) return;
@@ -536,14 +551,6 @@ void MainWindow::updateFileListItemColor(QListWidgetItem* item) {
         item->setForeground(Qt::black);
     }
 }
-
-
-
-
-
-
-
-
 
 
 void MainWindow::loadFiles(const QString& path) {
@@ -572,26 +579,49 @@ void MainWindow::on_openDirectoryPushButton_clicked() {
         ui->label->configure.last_open = dir;
     }
 }
-// Update on_savePushButton_clicked to update the color
 void MainWindow::on_savePushButton_clicked() {
     ui->label->saveLabel();
     QListWidgetItem* currentItem = ui->fileListWidget->currentItem();
     if (currentItem) {
         updateFileListItemColor(currentItem);
+        currentItem->setData(Qt::UserRole + 1, true);  // 更新缓存的标注状态
     }
 }
 
 
-
-void MainWindow::on_fileListWidget_currentItemChanged(QListWidgetItem *current, QListWidgetItem *previous) {
+void MainWindow::on_fileListWidget_currentItemChanged(QListWidgetItem *current, QListWidgetItem *previous)
+{
     if (current == nullptr) return;
+
+    // Update previous item's color (if exists)
+    if (previous) {
+        updateFileListItemColor(previous);
+    }
+
+    // Handle current item
     QString fullPath = current->data(Qt::UserRole).toString();
     ui->label->setCurrentFile(fullPath);
     int idx = static_cast<IndexQListWidgetItem *>(current)->getIndex();
     ui->fileListHorizontalSlider->setValue(idx + 1);
-    updateFileListItemColor(current);
-}
 
+    // Update current item's color
+    updateFileListItemColor(current);
+
+    // Update file list label
+    ui->fileListLabel->setText(QString::asprintf("[%d/%d]", idx + 1, ui->fileListWidget->count()));
+
+    // Refresh label view
+    ui->label->update();
+
+    // If auto-enhance is enabled, apply enhancement
+    if (ui->label->configure.auto_enhance_V) {
+        ui->label->illuminate();
+    } else {
+        ui->label->enh_img = NULL_IMG;
+        ui->label->modified_img = NULL_IMG;
+        ui->label->image_enhanceV = ui->label->image_equalizeHist = false;
+    }
+}
 
 void MainWindow::updateUIAfterDeletion()
 {

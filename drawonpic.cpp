@@ -884,9 +884,9 @@ void DrawOnPic::keyPressEvent(QKeyEvent *event) {
 #pragma endregion
 
 #pragma region 多步删除当前文件
-        case Qt::Key_1: // Allow delete current file
-            del_file = true;
-            break;
+        // case Qt::Key_1: // Allow delete current file
+        //     del_file = true;
+        //     break;
         case Qt::Key_2: // Delete current file
             if (del_file) {
                 namespace fs = std::filesystem;
@@ -906,9 +906,9 @@ void DrawOnPic::keyPressEvent(QKeyEvent *event) {
                 del_file = false;
             }
             break;
-        case Qt::Key_3: // Prohibit delete current file
-            del_file = false;
-            break;
+        // case Qt::Key_3: // Prohibit delete current file
+        //     del_file = false;
+        //     break;
 #pragma endregion
 
 #pragma region 涂黑
