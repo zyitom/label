@@ -10,7 +10,7 @@
 #include <QMessageBox>
 #include <QDebug>
 #include <QDir>
-
+#include "drawonpic.h"
 class IndexQListWidgetItem : public QListWidgetItem {
 public:
     IndexQListWidgetItem(QString name, int index) : QListWidgetItem(name), index(index) {
@@ -38,6 +38,7 @@ MainWindow::MainWindow(QWidget *parent, std::string path, int init_mode) :
     QObject::connect(ui->configurePushButton, &QPushButton::clicked, [=](){cdialog->show_configure();});
     QObject::connect(ui->label, &DrawOnPic::labelDialogClosed, this, &MainWindow::onLabelDialogClosed);
     QObject::connect(ui->savePushButton, &QPushButton::clicked, this, &MainWindow::on_savePushButton_clicked);
+    QObject::connect(ui->label, &DrawOnPic::newLabelAdded, this, &MainWindow::onNewLabelAdded);
     QObject::connect(ui->label, &DrawOnPic::delCurrentImage, [=]() {
         ui->label->enh_img = NULL_IMG;
         ui->label->modified_img = NULL_IMG;
@@ -94,7 +95,12 @@ MainWindow::MainWindow(QWidget *parent, std::string path, int init_mode) :
         this->installEventFilter(this);
     }
 }
-
+void MainWindow::onNewLabelAdded(int index) {
+    if (index >= 0 && index < ui->labelListWidget->count()) {
+        ui->labelListWidget->setCurrentRow(index);
+        ui->labelListWidget->setFocus();
+    }
+}
 void MainWindow::onLabelDialogClosed(int boxIndex)
 {
     // 确保 labelListWidget 存在且有足够的项

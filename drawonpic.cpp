@@ -489,8 +489,8 @@ void DrawOnPic::mouseReleaseEvent(QMouseEvent *event) {
         case NORMAL_MODE:   // 松开左键，停止拖动定位点
             draging = nullptr;
             break;
-        case ADDING_MODE:
-                adding.append(norm2img.inverted().map(img2label.inverted().map(pos)));
+case ADDING_MODE:
+            adding.append(norm2img.inverted().map(img2label.inverted().map(pos)));
             if (adding.size() == 4 + (label_mode == Wind)) {
                 box_t box;
                 for (int i = 0; i < 4 + (label_mode == Wind); ++i) box.pts[i] = adding[i];
@@ -518,7 +518,8 @@ void DrawOnPic::mouseReleaseEvent(QMouseEvent *event) {
                 setNormalMode();
                 emit labelChanged(current_label);
 
-
+                // 发送新标签添加的信号
+                emit newLabelAdded(current_label.size() - 1);
             }
             update();
             break;

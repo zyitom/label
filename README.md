@@ -1,6 +1,16 @@
 <div style="background-color: #ffcccc; border: 2px solid red; padding: 10px; margin-bottom: 20px;">
   <h2 style="color: red; text-align: center;">⚠️ 警告 ⚠️</h2>
-  <p style="color: red; font-weight: bold; text-align: center;">请在操作之前仔细阅读整篇文章！</p>
+  <p style="color: red; font-weight: bold; text-align: center;">请在标准之前仔细阅读整篇文章！</p>
+</div>
+
+<div style="background-color: #ffcccc; border: 2px solid red; padding: 10px; margin-bottom: 20px;">
+  <h2 style="color: red; text-align: center;">⚠️ 警告 ⚠️</h2>
+  <p style="color: red; font-weight: bold; text-align: center;">请在标准之前仔细阅读整篇文章！</p>
+</div>
+
+<div style="background-color: #ffcccc; border: 2px solid red; padding: 10px; margin-bottom: 20px;">
+  <h2 style="color: red; text-align: center;">⚠️ 警告 ⚠️</h2>
+  <p style="color: red; font-weight: bold; text-align: center;">请在标准之前仔细阅读整篇文章！</p>
 </div>
 
 <div align="center">

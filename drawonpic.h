@@ -235,6 +235,8 @@ signals:
     void update_list_name_signal(const LabelMode mode);
 
     void labelDialogClosed(int boxIndex);
+
+    void newLabelAdded(int index);
 private:
 
 

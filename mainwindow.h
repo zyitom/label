@@ -66,6 +66,8 @@ private slots:
     void onLabelDialogClosed(int boxIndex);
 
     void on_savePushButton_clicked();
+
+    void onNewLabelAdded(int index);
 private:
     int lastEditedLabelIndex; // 记录最后编辑的标签索引
 
